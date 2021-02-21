@@ -1,11 +1,13 @@
 const QRCode = require('qrcode');
 const stream = require('stream');
+const admin = require("firebase-admin");
 const whitespace = '[\\0\\t\\n\\f\\r\\ ]+';
 const forwardSlash = '\\/';
 const alphanumerics = '\\w+';
 const decimal = '\\d+\\.\\d+|\\d+';
 const moment = require('moment');
 require("moment/locale/es");
+
 const { PDFRawStream, decodePDFRawStream, arrayAsString, PDFRef } = require('pdf-lib');
 
 
@@ -141,4 +143,26 @@ exports.removePageBackground = (page) => {
 exports.getDateText = (date) => {
   const momentObj = moment(date);
   return toSentence(momentObj.format('D [de] MMMM [del] YYYY'));
+}
+
+exports.sanitizeInputRequest = (stringRequest) => {
+  const input = JSON.parse(stringRequest);
+  const result = {};
+  Object.keys(input).forEach(key => {
+    result[key] = typeof input[key] == "string" ? input[key].trim() : input[key];
+  });
+  return result;
+}
+
+exports.isAuthorized = async (request) => {
+  const tokenId = request.get('Authorization').split('Bearer ')[1];
+  let decoded;
+  let error;
+  try {
+    decoded = await admin.auth().verifyIdToken(tokenId);
+  } catch (error) {
+    console.log(error);
+    error = error;
+  }
+  return { decoded, error };
 }
