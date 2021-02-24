@@ -1,9 +1,50 @@
 const admin = require("firebase-admin");
 const FileType = require('file-type');
+const moment = require('moment');
 const { Storage } = require('@google-cloud/storage');
 
 const firestore = admin.firestore();
 const storage = new Storage({ keyFilename: "./key.json" });
+
+exports.takeRequest = async (workerId, requestId, type, expDays) => {
+
+    let requestRef = firestore.collection('solicitudes').doc(requestId); // Actualizo el estado de la solicitud
+
+    return firestore.runTransaction((transaction) => {
+        // This code may get re-run multiple times if there are conflicts.
+        return transaction.get(requestRef).then(function (doc) {
+            if (doc.exists) {
+                if (doc.data().status == 'DISPONIBLE') {
+                    transaction.update(requestRef, {
+                        takenBy: workerId,
+                        status: 'TOMADO',
+                        takenAt: new Date(),
+                        expDate: moment().add(expDays, 'days').toDate()
+                    });
+
+                    const batch = firestore.batch();
+
+                    // Actualizo las estadísticas
+                    let statisticsRef1 = firestore.collection('estadisticas').doc(type);
+                    batch.update(statisticsRef1, {
+                        available: admin.firestore.FieldValue.increment(-1)
+                    });
+
+                    let statisticsRef2 = firestore.collection('estadisticas').doc(workerId + '-' + type);
+                    batch.update(statisticsRef2, {
+                        taken: admin.firestore.FieldValue.increment(1)
+                    });
+
+                    batch.commit();
+                } else {
+                    throw "La solicitud ya ha sido tomada";
+                }
+            } else {
+                throw "No se encuentra el usuario";
+            }
+        });
+    });
+}
 
 exports.setRequestDone = async (workerId, requestId, type) => {
 
@@ -16,7 +57,7 @@ exports.setRequestDone = async (workerId, requestId, type) => {
 
     // Y finalmente, actualizo las estadísticas
     let statisticsRef = firestore.collection('estadisticas').doc(workerId + '-' + type);
-    
+
     batch.update(statisticsRef, {
         taken: admin.firestore.FieldValue.increment(-1),
         done: admin.firestore.FieldValue.increment(1)

@@ -10,7 +10,6 @@ require("moment/locale/es");
 
 const { PDFRawStream, decodePDFRawStream, arrayAsString, PDFRef } = require('pdf-lib');
 
-
 // prettier-ignore
 const whiteBackgroundOperatorsRegex = new RegExp(
   `${forwardSlash}${alphanumerics}${whitespace}cs${whitespace}` +
