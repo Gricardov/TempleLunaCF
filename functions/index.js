@@ -19,6 +19,12 @@ app.use(cors);
 
 exports.app = functions.https.onRequest(app);
 
+exports.createRequestTrigger = functions.firestore.document('/{collection}/{id}').onCreate((snap, context) => {
+    console.log(snap.data());
+    console.log(context.params.collection + ' ' + context.params.id);
+
+});
+
 app.post('/takeRequest', async (request, response) => {
     try {
         const { decoded, error } = await isAuthorized(request);
