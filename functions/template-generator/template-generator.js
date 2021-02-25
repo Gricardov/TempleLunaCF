@@ -42,7 +42,7 @@ exports.generateRequestTemplate = async (artist, requestId, title, intention, ho
     lastCoordinates = setText(pages[0], helveticaBold, 'V.1.1 Loedrin', 12, rgb(1, 1, 1), width1, 25, 'RIGHT', 20);
 
     // Código QR
-    const qrFile = await generateQRFile(`${process.env.URL_FRONT}/id=${requestId}`, 70);
+    const qrFile = await generateQRFile(`${process.env.URL_FRONT}?id=${requestId}`, 70);
     const pdfImg = await pdf.embedPng(qrFile);
     lastCoordinates = setImage(pages[0], pdfImg, 70, 70, width1 - pdfImg.width - 25, lastCoordinates.height + lastCoordinates.y + 15);
 
