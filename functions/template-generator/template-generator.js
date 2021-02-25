@@ -6,11 +6,11 @@ require('dotenv').config();
 
 const DEFAULT_BACKGROUND_COLOR = rgb(243 / 255, 241 / 255, 255 / 255);
 
-const templateRequest = fs.readFileSync('./templates/sample.pdf');
+const templateRequest = fs.readFileSync('templates/sample.pdf');
 //const segoeUIFont = fs.readFileSync('./fonts/SegoeUI.ttf');
 //const segoeUIBoldFont = fs.readFileSync('./fonts/SegoeUI-Bold.ttf');
 
-exports.generateRequestTemplate = async (requestId, title, intention, hook, ortography, improvement) => {
+exports.generateRequestTemplate = async (artist, requestId, title, intention, hook, ortography, improvement) => {
     // Documento principal
     const pdf = await PDFDocument.load(templateRequest);
     pdf.registerFontkit(fontkit);
@@ -20,6 +20,9 @@ exports.generateRequestTemplate = async (requestId, title, intention, hook, orto
     let lineHeight = 10;
     let marginH = 86;
     let marginV = 86;
+
+    // Datos del artista
+    const { fName, lName, imgUrl, contactEmail, networks = [] } = artist;
 
     // Fuentes
 
@@ -39,7 +42,7 @@ exports.generateRequestTemplate = async (requestId, title, intention, hook, orto
     lastCoordinates = setText(pages[0], helveticaBold, 'V.1.1 Loedrin', 12, rgb(1, 1, 1), width1, 25, 'RIGHT', 20);
 
     // Código QR
-    const qrFile = await generateQRFile(`${process.env.URL_PROD}request-result/${requestId}`, 70);
+    const qrFile = await generateQRFile(`${process.env.URL_FRONT}/id=${requestId}`, 70);
     const pdfImg = await pdf.embedPng(qrFile);
     lastCoordinates = setImage(pages[0], pdfImg, 70, 70, width1 - pdfImg.width - 25, lastCoordinates.height + lastCoordinates.y + 15);
 
@@ -73,7 +76,7 @@ exports.generateRequestTemplate = async (requestId, title, intention, hook, orto
 
     // Nombre artista
     lastCoordinates = setParagraph(pdf, pages[1], {
-        text: 'Mila Luna Sorgalim',
+        text: fName + ' ' + lName,
         font: helvetica,
         size: 16,
         totalWidth: width2,
@@ -88,18 +91,20 @@ exports.generateRequestTemplate = async (requestId, title, intention, hook, orto
     lastCoordinates = setText(pages[1], helveticaBold, 'Síguelo(a) en sus redes', 16, rgb(0, 0, 0), width2, marginH, 'RIGHT', lastCoordinates.y - 60);
 
     // Contactos del artista
-    ['milaluna@gmail.com', 'twitter.com'].slice(0, 2).map(text => lastCoordinates = setText(pages[1], helvetica, text, 16, rgb(5 / 255, 99 / 255, 193 / 255), width2, marginH, 'RIGHT', lastCoordinates.y - 40));
+    networks.slice(0, 2).map(text => lastCoordinates = setText(pages[1], helvetica, text, 16, rgb(5 / 255, 99 / 255, 193 / 255), width2, marginH, 'RIGHT', lastCoordinates.y - 40));
 
-    // Título correo artista
-    lastCoordinates = setText(pages[1], helveticaBold, 'Correo de contacto', 16, rgb(0, 0, 0), width2, marginH, 'RIGHT', lastCoordinates.y - 60);
+    if (contactEmail) {
+        // Título correo artista
+        lastCoordinates = setText(pages[1], helveticaBold, 'Correo de contacto', 16, rgb(0, 0, 0), width2, marginH, 'RIGHT', lastCoordinates.y - 60);
 
-    // Correo artista
-    lastCoordinates = setText(pages[1], helvetica, 'sorgalim@sorgalim.com', 16, rgb(0, 0, 0), width2, marginH, 'RIGHT', lastCoordinates.y - 40);
+        // Correo artista
+        lastCoordinates = setText(pages[1], helvetica, contactEmail, 16, rgb(0, 0, 0), width2, marginH, 'RIGHT', lastCoordinates.y - 40);
+    }
 
-    // Título correo artista
+    // Título fecha
     lastCoordinates = setText(pages[1], helveticaBold, 'Fecha de realización', 16, rgb(0, 0, 0), width2, marginH, 'RIGHT', lastCoordinates.y - 60);
 
-    // Correo artista
+    // Fecha
     lastCoordinates = setText(pages[1], helvetica, getDateText(new Date()), 16, rgb(0, 0, 0), width2, marginH, 'RIGHT', lastCoordinates.y - 40);
 
     // Página 3

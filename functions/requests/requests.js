@@ -6,8 +6,44 @@ const { Storage } = require('@google-cloud/storage');
 const firestore = admin.firestore();
 const storage = new Storage({ keyFilename: "./key.json" });
 
-exports.takeRequest = async (workerId, requestId, type, expDays) => {
+exports.addAvailableRequestStatistics = async (type) => {
+    const refStatistics = firestore.collection('estadisticas').doc(type);
+    return refStatistics.update({
+        available: admin.firestore.FieldValue.increment(1)
+    });
+}
 
+exports.updateTakenRequestStatistics = async (workerId, type) => {
+    const refStatistics = firestore.collection('estadisticas').doc(type);
+    return firestore.runTransaction(async transaction => {
+        let doc2 = await transaction.get(refStatistics);
+        if (doc2.exists) {
+            if (doc2.data().available > 0) {
+                transaction.update(refStatistics, {
+                    available: admin.firestore.FieldValue.increment(-1)
+                });
+            }
+
+            let statisticsRef2 = firestore.collection('estadisticas').doc(workerId + '-' + type);
+            return statisticsRef2.update({
+                taken: admin.firestore.FieldValue.increment(1)
+            });
+
+        } else {
+            throw "No se encuentra el usuario";
+        }
+    });
+}
+
+exports.addDoneRequestStatistics = async (workerId, type) => {
+    const refStatistics = firestore.collection('estadisticas').doc(workerId + '-' + type);
+    return refStatistics.update({
+        taken: admin.firestore.FieldValue.increment(-1),
+        done: admin.firestore.FieldValue.increment(1)
+    });
+}
+
+exports.takeRequest = async (workerId, requestId, type, expDays) => {
     let requestRef = await firestore.collection('solicitudes').doc(requestId);
     let doc = await requestRef.get();
 
@@ -19,28 +55,6 @@ exports.takeRequest = async (workerId, requestId, type, expDays) => {
                 takenAt: new Date(),
                 expDate: moment().add(expDays, 'days').toDate()
             });
-
-            const refStatistics = firestore.collection('estadisticas').doc(type);
-
-            return firestore.runTransaction(async transaction => {
-                let doc2 = await transaction.get(refStatistics);
-                if (doc2.exists) {
-                    if (doc2.data().available > 0) {
-                        transaction.update(refStatistics, {
-                            available: admin.firestore.FieldValue.increment(-1)
-                        });
-                    }
-
-                    let statisticsRef2 = firestore.collection('estadisticas').doc(workerId + '-' + type);
-                    return statisticsRef2.update({
-                        taken: admin.firestore.FieldValue.increment(1)
-                    });
-
-                } else {
-                    throw "No se encuentra el usuario";
-                }
-            });
-
         } else {
             throw "La solicitud ya ha sido tomada";
         }
@@ -48,23 +62,11 @@ exports.takeRequest = async (workerId, requestId, type, expDays) => {
 }
 
 exports.setRequestDone = async (workerId, requestId, type) => {
-
-    const batch = firestore.batch();
     let requestRef = firestore.collection('solicitudes').doc(requestId); // Actualizo el estado de la solicitud
-    batch.update(requestRef, {
+    return requestRef.update({
         takenBy: workerId,
         status: 'HECHO',
     });
-
-    // Y finalmente, actualizo las estadísticas
-    let statisticsRef = firestore.collection('estadisticas').doc(workerId + '-' + type);
-
-    batch.update(statisticsRef, {
-        taken: admin.firestore.FieldValue.increment(-1),
-        done: admin.firestore.FieldValue.increment(1)
-    });
-
-    return batch.commit();
 }
 
 exports.getUrlResultByRequestId = async (requestId) => {
