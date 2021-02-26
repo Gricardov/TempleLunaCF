@@ -8,39 +8,38 @@ const storage = new Storage({ keyFilename: "./key.json" });
 
 exports.addAvailableRequestStatistics = async (type) => {
     const refStatistics = firestore.collection('estadisticas').doc(type);
-    return refStatistics.update({
+    return refStatistics.set({
         available: admin.firestore.FieldValue.increment(1)
-    });
+    }, { merge: true });
 }
 
 exports.updateTakenRequestStatistics = async (workerId, type) => {
     const refStatistics = firestore.collection('estadisticas').doc(type);
     return firestore.runTransaction(async transaction => {
         let doc2 = await transaction.get(refStatistics);
-        if (doc2.exists) {
-            if (doc2.data().available > 0) {
-                transaction.update(refStatistics, {
-                    available: admin.firestore.FieldValue.increment(-1)
-                });
-            }
-
-            let statisticsRef2 = firestore.collection('estadisticas').doc(workerId + '-' + type);
-            return statisticsRef2.update({
-                taken: admin.firestore.FieldValue.increment(1)
-            });
-
-        } else {
-            throw "No se encuentra el usuario";
+        if (!doc2.exists || doc2.data().available > 0) {
+            await transaction.set(refStatistics, {
+                available: admin.firestore.FieldValue.increment(-1)
+            }, { merge: true });
         }
+
+        let statisticsRef2 = firestore.collection('estadisticas').doc(workerId + '-' + type);
+        console.log('UPD ' + workerId + '-' + type);
+        return statisticsRef2.set({
+            taken: admin.firestore.FieldValue.increment(1)
+        }, { merge: true });
+
+
     });
 }
 
 exports.addDoneRequestStatistics = async (workerId, type) => {
     const refStatistics = firestore.collection('estadisticas').doc(workerId + '-' + type);
-    return refStatistics.update({
+    console.log('ADD DONE ' + workerId + '-' + type);
+    return refStatistics.set({
         taken: admin.firestore.FieldValue.increment(-1),
         done: admin.firestore.FieldValue.increment(1)
-    });
+    }, { merge: true });
 }
 
 exports.takeRequest = async (workerId, requestId, type, expDays) => {
@@ -49,7 +48,7 @@ exports.takeRequest = async (workerId, requestId, type, expDays) => {
 
     if (doc.exists) {
         if (doc.data().status == 'DISPONIBLE') { // Solo se va a tomar uno disponible
-            requestRef.update({
+            return requestRef.update({
                 takenBy: workerId,
                 status: 'TOMADO',
                 takenAt: new Date(),
