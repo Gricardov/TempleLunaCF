@@ -18,7 +18,7 @@ exports.sendEmail = (receiver, title, linkTo, authorName, pageLink) => {
         to: receiver,
         subject: title,
         text: `Hola ${authorName}. Tu trabajo final puede ser encontrado aquí:\n${linkTo}\nTe esperamos en la mejor comunidad literaria del mundo: ${pageLink}\nEquipo Temple Luna.`,
-        html: mailTemplate.replace(/{{pagelink}}/g, pageLink).replace(/{{linkto}}/g, linkTo).replace(/{{artistname}}/g, authorName).replace(/{{title}}/g, title)
+        html: mailTemplate.toString().replace(/{{pagelink}}/g, pageLink).replace(/{{linkto}}/g, linkTo).replace(/{{artistname}}/g, authorName).replace(/{{title}}/g, title)
     };
 
     return transporter.sendMail(mailOptions, function (error, info) {
