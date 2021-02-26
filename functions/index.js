@@ -26,23 +26,21 @@ exports.createRequestTrigger = functions.firestore.document('/solicitudes/{id}')
     return addAvailableRequestStatistics(snap.data().type);
 });
 
-exports.updateRequestTrigger = functions.firestore.document('/solicitudes/{id}').onUpdate(async (snap, context) => {
-    const { takenBy, type, status, name, email } = snap.after.data();
+exports.updateRequestTrigger = functions.firestore.document('/solicitudes/{id}').onUpdate(async (snap, context) => { // Se encarga de las estadísticas
+    const { status: prevStatus } = snap.before.data();
+    const { takenBy, type, status: curStatus, name, email } = snap.after.data();
     const requestId = context.params.id;
 
-    switch (status) {
-        case 'TOMADO':
-            await updateTakenRequestStatistics(takenBy, type);
-            return;
-        case 'HECHO':
-            // Y aquí solo queda enviar correo
-            await addDoneRequestStatistics(takenBy, type);
-            return sendEmail(email,
-                type == 'CRITICA' ? '¡Tu crítica Temple Luna está lista!' : type == 'DISENO' ? '¡Tu diseño Temple Luna está listo!' : '¡Tu solicitud Temple Luna está lista!',
-                `Hola ${name}. Tu trabajo final puede ser encontrado aquí:\n${process.env.URL_FRONT}?id=${requestId}\nTe esperamos en la mejor comunidad literaria del mundo: https://www.facebook.com/groups/templeluna\nEquipo Temple Luna.`
-            );
-        default:
-            return;
+    if (prevStatus == 'DISPONIBLE' && curStatus == 'TOMADO') {
+        return updateTakenRequestStatistics(takenBy, type);
+    } else if (prevStatus == 'TOMADO' && curStatus == 'HECHO') {
+        await addDoneRequestStatistics(takenBy, type);
+        return sendEmail(email,
+            type == 'CRITICA' ? '¡Tu crítica Temple Luna está lista!' : type == 'DISENO' ? '¡Tu diseño Temple Luna está listo!' : '¡Tu solicitud Temple Luna está lista!',
+            `${process.env.URL_FRONT}?id=${requestId}`,
+            name,
+            'https://www.facebook.com/groups/templeluna'
+        );
     }
 });
 
@@ -92,7 +90,7 @@ app.post('/generateResultRequest', async (request, response) => {
     }
 });
 
-app.get('/request-result/:requestId', async (request, response) => {
+/*app.get('/request-result/:requestId', async (request, response) => {
     try {
         const url = await getUrlResultByRequestId(request.params.requestId);
         if (url) {
@@ -104,4 +102,4 @@ app.get('/request-result/:requestId', async (request, response) => {
         console.log(error);
         response.send(500, 'Error al realizar la operación');
     }
-});
+});*/

@@ -24,7 +24,6 @@ exports.updateTakenRequestStatistics = async (workerId, type) => {
         }
 
         let statisticsRef2 = firestore.collection('estadisticas').doc(workerId + '-' + type);
-        console.log('UPD ' + workerId + '-' + type);
         return statisticsRef2.set({
             taken: admin.firestore.FieldValue.increment(1)
         }, { merge: true });
@@ -35,7 +34,6 @@ exports.updateTakenRequestStatistics = async (workerId, type) => {
 
 exports.addDoneRequestStatistics = async (workerId, type) => {
     const refStatistics = firestore.collection('estadisticas').doc(workerId + '-' + type);
-    console.log('ADD DONE ' + workerId + '-' + type);
     return refStatistics.set({
         taken: admin.firestore.FieldValue.increment(-1),
         done: admin.firestore.FieldValue.increment(1)
