@@ -12,3 +12,10 @@ exports.getArtistData = async userId => {
         throw "El usuario no existe";
     }
 }
+
+exports.getProfiles = async () => {
+    const qsn = await firestore.collection('perfiles').get();
+    let list = [];
+    qsn.forEach(doc => list.push({ fName: doc.data().fName, lName: doc.data().lName, id: doc.id }));
+    return list;
+}

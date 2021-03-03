@@ -6,7 +6,7 @@ require('dotenv').config();
 
 const DEFAULT_BACKGROUND_COLOR = rgb(243 / 255, 241 / 255, 255 / 255);
 
-const templateRequest = fs.readFileSync('templates/sample.pdf');
+const templateRequest = fs.readFileSync(__dirname + '/../templates/sample.pdf');
 //const segoeUIFont = fs.readFileSync('./fonts/SegoeUI.ttf');
 //const segoeUIBoldFont = fs.readFileSync('./fonts/SegoeUI-Bold.ttf');
 

@@ -1,6 +1,6 @@
 const fs = require('fs');
 const nodemailer = require('nodemailer');
-const mailTemplate = fs.readFileSync('templates/mail.html');
+const mailTemplate = fs.readFileSync(__dirname + '/../templates/mail.html');
 
 require('dotenv').config();
 

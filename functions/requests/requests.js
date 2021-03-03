@@ -78,6 +78,19 @@ exports.setRequestResultUrl = async (requestId, url) => {
     return admin.firestore().collection('solicitudes').doc(requestId).update({ resultUrl: url });
 }
 
+exports.getStatisticsByIds = async (idArrays) => {
+    const results = [];
+    const promises = idArrays.map(id => admin.firestore().collection('estadisticas').doc(id).get());
+    const dsn = await Promise.all(promises);
+    dsn.map(doc => {
+        if (doc.exists) {
+            return results.push({ ...doc.data(), id: doc.id });
+        }
+        return;
+    })
+    return results;
+}
+
 exports.uploadResultRequest = async (fileBuffer, path, filename) => {
     const metadata = await FileType.fromBuffer(fileBuffer);
     const file = storage.bucket('gs://temple-luna.appspot.com').file(`${path}/${filename}.${metadata.ext}`);
