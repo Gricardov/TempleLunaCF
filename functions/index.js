@@ -23,7 +23,7 @@ app.use(cors);
 
 exports.app = functions.https.onRequest(app);
 
-exports.createRequestTrigger = functions.firestore.document('/solicitudes/{id}').onCreate(async (snap, context) => {
+exports.createRequestTrigger = functions.firestore.document('/solicitudes/{id}').onCreate((snap, context) => {
     return addAvailableRequestStatistics(snap.data().type);
 });
 
