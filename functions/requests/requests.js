@@ -6,19 +6,15 @@ const { Storage } = require('@google-cloud/storage');
 const firestore = admin.firestore();
 const storage = new Storage({ keyFilename: "./key.json" });
 
-async function configureBucketCors() {
-    await storage.bucket(bucketName).setCorsConfiguration([
+const configureBucketCors = async () => {
+    await storage.bucket('gs://temple-luna.appspot.com').setCorsConfiguration([
         {
             maxAgeSeconds: 3600,
             method: ['GET'],
             origin: ['*'],
-            responseHeader: ['Access-Control-Request-Header', 'Access-Control-Request-Method', 'Access-Control-Allow-Origin'],
+            responseHeader: '*',
         },
     ]);
-
-    console.log(`Bucket ${bucketName} was updated with a CORS config
-        to allow ${method} requests from ${origin} sharing
-        ${responseHeader} responses across origins`);
 }
 
 configureBucketCors();
