@@ -6,6 +6,23 @@ const { Storage } = require('@google-cloud/storage');
 const firestore = admin.firestore();
 const storage = new Storage({ keyFilename: "./key.json" });
 
+async function configureBucketCors() {
+    await storage.bucket(bucketName).setCorsConfiguration([
+        {
+            maxAgeSeconds: 3600,
+            method: ['GET'],
+            origin: ['*'],
+            responseHeader: ['Access-Control-Request-Header', 'Access-Control-Request-Method', 'Access-Control-Allow-Origin'],
+        },
+    ]);
+
+    console.log(`Bucket ${bucketName} was updated with a CORS config
+        to allow ${method} requests from ${origin} sharing
+        ${responseHeader} responses across origins`);
+}
+
+configureBucketCors();
+
 exports.addAvailableRequestStatistics = async (type) => {
     const refStatistics = firestore.collection('estadisticas').doc(type);
     return refStatistics.set({

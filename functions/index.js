@@ -24,39 +24,25 @@ app.use(cors);
 exports.app = functions.https.onRequest(app);
 
 exports.createRequestTrigger = functions.firestore.document('/solicitudes/{id}').onCreate(async (snap, context) => {
-    try {
-        await addAvailableRequestStatistics(snap.data().type);
-        return;
-    } catch (error) {
-        console.log(error);
-        response.send(500, 'Error en trigger');
-        addException({ message: error, method: '/createRequestTrigger', date: admin.firestore.FieldValue.serverTimestamp(), extra: snap.data() });
-    }
+    return addAvailableRequestStatistics(snap.data().type);
 });
 
 exports.updateRequestTrigger = functions.firestore.document('/solicitudes/{id}').onUpdate(async (snap, context) => { // Se encarga de las estadísticas
-    try {
-        const { status: prevStatus } = snap.before.data();
-        const { takenBy, type, status: curStatus, name, email } = snap.after.data();
-        const requestId = context.params.id;
+    const { status: prevStatus } = snap.before.data();
+    const { takenBy, type, status: curStatus, name, email } = snap.after.data();
+    const requestId = context.params.id;
 
-        if (prevStatus == 'DISPONIBLE' && curStatus == 'TOMADO') {
-            return updateTakenRequestStatistics(takenBy, type);
-        } else if (prevStatus == 'TOMADO' && curStatus == 'HECHO') {
-            await addDoneRequestStatistics(takenBy, type);
-            return sendEmail(email,
-                type == 'CRITICA' ? '¡Tu crítica Temple Luna está lista!' : type == 'DISENO' ? '¡Tu diseño Temple Luna está listo!' : '¡Tu solicitud Temple Luna está lista!',
-                `${process.env.URL_FRONT}?id=${requestId}`,
-                name,
-                'https://www.facebook.com/groups/templeluna'
-            );
-        }
-    } catch (error) {
-        console.log(error);
-        response.send(500, 'Error en trigger');
-        addException({ message: error, method: '/updateRequestTrigger', date: admin.firestore.FieldValue.serverTimestamp(), extra: { before: { ...snap.before.data() }, after: { ...snap.after.data() } } });
+    if (prevStatus == 'DISPONIBLE' && curStatus == 'TOMADO') {
+        return updateTakenRequestStatistics(takenBy, type);
+    } else if (prevStatus == 'TOMADO' && curStatus == 'HECHO') {
+        await addDoneRequestStatistics(takenBy, type);
+        return sendEmail(email,
+            type == 'CRITICA' ? '¡Tu crítica Temple Luna está lista!' : type == 'DISENO' ? '¡Tu diseño Temple Luna está listo!' : '¡Tu solicitud Temple Luna está lista!',
+            `${process.env.URL_FRONT}?id=${requestId}`,
+            name,
+            'https://www.facebook.com/groups/templeluna'
+        );
     }
-
 });
 
 app.post('/takeRequest', async (request, response) => {
