@@ -9,7 +9,7 @@ admin.initializeApp({
 const express = require('express');
 const { generateRequestTemplate } = require('./template-generator/template-generator');
 const { sanitizeInputRequest, isAuthorized } = require('./helpers/functions');
-const { setRequestResultUrl, uploadResultRequest, getStatisticsByIds, takeRequest, setRequestDone, addAvailableRequestStatistics, updateTakenRequestStatistics, addDoneRequestStatistics } = require('./requests/requests');
+const { setRequestResultUrl, uploadResultRequest, getStatisticsByIds, takeRequest, setRequestDone, addAvailableRequestStatistics, updateTakenRequestStatistics, addDoneRequestStatistics, addLove } = require('./requests/requests');
 const { getArtistData, getProfiles } = require('./users/users');
 const { addException } = require('./exceptions/exceptions');
 const { sendEmail } = require('./mail/sender');
@@ -38,7 +38,7 @@ exports.updateRequestTrigger = functions.firestore.document('/solicitudes/{id}')
         await addDoneRequestStatistics(takenBy, type);
         return sendEmail(email,
             type == 'CRITICA' ? '¡Tu crítica Temple Luna está lista!' : type == 'DISENO' ? '¡Tu diseño Temple Luna está listo!' : '¡Tu solicitud Temple Luna está lista!',
-            `${process.env.URL_FRONT}?id=${requestId}`,
+            `${process.env.URL_FRONT}?id=${requestId}&templated=true`,
             name,
             'https://www.facebook.com/groups/templeluna'
         );
@@ -59,6 +59,18 @@ app.post('/takeRequest', async (request, response) => {
         console.log(error);
         response.send(500, 'Error al realizar la operación');
         addException({ message: error, method: '/takeRequest', date: admin.firestore.FieldValue.serverTimestamp(), extra: request.body });
+    }
+});
+
+app.post('/addLove', async (request, response) => {
+    try {
+        const { requestId, direction } = sanitizeInputRequest(request.body);
+        await addLove(requestId, direction);
+        response.send({ ok: 'ok' });
+    } catch (error) {
+        console.log(error);
+        response.send(500, 'Error al realizar la operación');
+        addException({ message: error, method: '/addLove', date: admin.firestore.FieldValue.serverTimestamp(), extra: request.body });
     }
 });
 

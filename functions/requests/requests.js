@@ -12,7 +12,7 @@ const configureBucketCors = async () => {
             maxAgeSeconds: 3600,
             method: ['GET'],
             origin: ['*'],
-            responseHeader: '*',
+            responseHeader: ['*'],
         },
     ]);
 }
@@ -30,7 +30,7 @@ exports.updateTakenRequestStatistics = async (workerId, type) => {
     const refStatistics = firestore.collection('estadisticas').doc(type);
     return firestore.runTransaction(async transaction => {
         let doc2 = await transaction.get(refStatistics);
-        if (!doc2.exists || doc2.data().available > 0) {
+        if (doc2.exists && doc2.data().available > 0) {
             await transaction.set(refStatistics, {
                 available: admin.firestore.FieldValue.increment(-1)
             }, { merge: true });
@@ -40,8 +40,6 @@ exports.updateTakenRequestStatistics = async (workerId, type) => {
         return statisticsRef2.set({
             taken: admin.firestore.FieldValue.increment(1)
         }, { merge: true });
-
-
     });
 }
 
@@ -80,7 +78,7 @@ exports.setRequestDone = async (workerId, requestId, type) => {
 }
 
 exports.getUrlResultByRequestId = async (requestId) => {
-    const result = await admin.firestore().collection('solicitudes').doc(requestId).get();
+    const result = await firestore.collection('solicitudes').doc(requestId).get();
     if (result.exists) {
         return result.data().resultUrl;
     }
@@ -88,12 +86,12 @@ exports.getUrlResultByRequestId = async (requestId) => {
 }
 
 exports.setRequestResultUrl = async (requestId, url) => {
-    return admin.firestore().collection('solicitudes').doc(requestId).update({ resultUrl: url });
+    return firestore.collection('solicitudes').doc(requestId).update({ resultUrl: url });
 }
 
 exports.getStatisticsByIds = async (idArrays) => {
     const results = [];
-    const promises = idArrays.map(id => admin.firestore().collection('estadisticas').doc(id).get());
+    const promises = idArrays.map(id => firestore.collection('estadisticas').doc(id).get());
     const dsn = await Promise.all(promises);
     dsn.map(doc => {
         if (doc.exists) {
@@ -102,6 +100,26 @@ exports.getStatisticsByIds = async (idArrays) => {
         return;
     })
     return results;
+}
+
+exports.addLove = async (requestId, direction) => {
+    const refStatistics = firestore.collection('solicitudes').doc(requestId);
+    if (direction == 1) {
+        return refStatistics.set({
+            available: admin.firestore.FieldValue.increment(1)
+        }, { merge: true });
+    } else if (direction == -1) {
+        return firestore.runTransaction(async transaction => {
+            let doc = await transaction.get(refStatistics);
+            if (doc.exists && doc.data().available > 0) {
+                await transaction.set(refStatistics, {
+                    available: admin.firestore.FieldValue.increment(-1)
+                }, { merge: true });
+            }
+        });
+    } else {
+        throw "Solo puedes agregar o quitar un corazón";
+    }
 }
 
 exports.uploadResultRequest = async (fileBuffer, path, filename) => {
