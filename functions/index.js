@@ -64,7 +64,7 @@ app.post('/takeRequest', async (request, response) => {
 
 app.post('/addLove', async (request, response) => {
     try {
-        const { requestId, direction } = sanitizeInputRequest(request.body);
+        const { id:requestId, direction } = sanitizeInputRequest(request.body);
         await addLove(requestId, direction);
         response.send({ ok: 'ok' });
     } catch (error) {

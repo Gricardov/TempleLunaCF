@@ -106,18 +106,18 @@ exports.addLove = async (requestId, direction) => {
     const refStatistics = firestore.collection('solicitudes').doc(requestId);
     if (direction == 1) {
         return refStatistics.set({
-            available: admin.firestore.FieldValue.increment(1)
+            likes: admin.firestore.FieldValue.increment(1)
         }, { merge: true });
-    } else if (direction == -1) {
+    }/* else if (direction == -1) {
         return firestore.runTransaction(async transaction => {
             let doc = await transaction.get(refStatistics);
-            if (doc.exists && doc.data().available > 0) {
+            if (doc.exists && doc.data().likes > 0) {
                 await transaction.set(refStatistics, {
-                    available: admin.firestore.FieldValue.increment(-1)
+                    likes: admin.firestore.FieldValue.increment(-1)
                 }, { merge: true });
             }
         });
-    } else {
+    }*/ else {
         throw "Solo puedes agregar o quitar un corazón";
     }
 }
