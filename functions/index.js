@@ -9,7 +9,7 @@ admin.initializeApp({
 const express = require('express');
 const { generateRequestTemplate } = require('./template-generator/template-generator');
 const { sanitizeInputRequest, isAuthorized } = require('./helpers/functions');
-const { setRequestResultUrl, uploadResultRequest, getStatisticsByIds, takeRequest, setRequestDone, addAvailableRequestStatistics, updateTakenRequestStatistics, addDoneRequestStatistics, addLove } = require('./requests/requests');
+const { setRequestResultUrl, uploadResultRequest, getStatisticsByIds, takeRequest, setRequestDone, addAvailableRequestStatistics, updateTakenRequestStatistics, addDoneRequestStatistics, addLove, addComment } = require('./requests/requests');
 const { getArtistData, getProfiles } = require('./users/users');
 const { addException } = require('./exceptions/exceptions');
 const { sendEmail } = require('./mail/sender');
@@ -64,13 +64,29 @@ app.post('/takeRequest', async (request, response) => {
 
 app.post('/addLove', async (request, response) => {
     try {
-        const { id:requestId, direction } = sanitizeInputRequest(request.body);
+        const { id: requestId, direction } = sanitizeInputRequest(request.body);
         await addLove(requestId, direction);
         response.send({ ok: 'ok' });
     } catch (error) {
         console.log(error);
         response.send(500, 'Error al realizar la operación');
         addException({ message: error, method: '/addLove', date: admin.firestore.FieldValue.serverTimestamp(), extra: request.body });
+    }
+});
+
+app.post('/addComment', async (request, response) => {
+    try {
+        const { id: requestId, alias, message } = sanitizeInputRequest(request.body);
+        if (message.length <= 1000 && alias.length <= 50) {
+            await addComment(requestId, alias, message);
+            response.send({ ok: 'ok' });
+        } else {
+            response.send(500, 'El mensaje y el alias no pueden exceder los caracteres permitidos');
+        }
+    } catch (error) {
+        console.log(error);
+        response.send(500, 'Error al realizar la operación');
+        addException({ message: error, method: '/addComment', date: admin.firestore.FieldValue.serverTimestamp(), extra: request.body });
     }
 });
 

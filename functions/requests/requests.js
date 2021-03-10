@@ -108,18 +108,19 @@ exports.addLove = async (requestId, direction) => {
         return refStatistics.set({
             likes: admin.firestore.FieldValue.increment(1)
         }, { merge: true });
-    }/* else if (direction == -1) {
-        return firestore.runTransaction(async transaction => {
-            let doc = await transaction.get(refStatistics);
-            if (doc.exists && doc.data().likes > 0) {
-                await transaction.set(refStatistics, {
-                    likes: admin.firestore.FieldValue.increment(-1)
-                }, { merge: true });
-            }
-        });
-    }*/ else {
+    } else {
         throw "Solo puedes agregar o quitar un corazón";
     }
+}
+
+exports.addComment = async (requestId, alias, message) => {
+    return firestore.collection('solicitudes').doc(requestId).set({
+        feedback: {
+            alias,
+            message,
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        }
+    }, { merge: true });
 }
 
 exports.uploadResultRequest = async (fileBuffer, path, filename) => {
