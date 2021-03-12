@@ -51,6 +51,14 @@ exports.addDoneRequestStatistics = async (workerId, type) => {
     }, { merge: true });
 }
 
+exports.getRequest = async (requestId) => {
+    const result = await firestore.collection('solicitudes').doc(requestId).get();
+    if (result.exists) {
+        return { ...result.data(), id: result.id };
+    }
+    throw "La solicitud no existe";
+}
+
 exports.takeRequest = async (workerId, requestId, type, expDays) => {
     let requestRef = await firestore.collection('solicitudes').doc(requestId);
     let doc = await requestRef.get();
@@ -82,7 +90,7 @@ exports.getUrlResultByRequestId = async (requestId) => {
     if (result.exists) {
         return result.data().resultUrl;
     }
-    return null;
+    throw "No existe la url";
 }
 
 exports.setRequestResultUrl = async (requestId, url) => {

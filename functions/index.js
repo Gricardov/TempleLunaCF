@@ -9,7 +9,7 @@ admin.initializeApp({
 const express = require('express');
 const { generateRequestTemplate } = require('./template-generator/template-generator');
 const { sanitizeInputRequest, isAuthorized } = require('./helpers/functions');
-const { setRequestResultUrl, uploadResultRequest, getStatisticsByIds, takeRequest, setRequestDone, addAvailableRequestStatistics, updateTakenRequestStatistics, addDoneRequestStatistics, addLove, addComment } = require('./requests/requests');
+const { setRequestResultUrl, uploadResultRequest, getStatisticsByIds, getRequest, takeRequest, setRequestDone, addAvailableRequestStatistics, updateTakenRequestStatistics, addDoneRequestStatistics, addLove, addComment } = require('./requests/requests');
 const { getArtistData, getProfiles } = require('./users/users');
 const { addException } = require('./exceptions/exceptions');
 const { sendEmail } = require('./mail/sender');
@@ -87,6 +87,24 @@ app.post('/addComment', async (request, response) => {
         console.log(error);
         response.send(500, 'Error al realizar la operación');
         addException({ message: error, method: '/addComment', date: admin.firestore.FieldValue.serverTimestamp(), extra: request.body });
+    }
+});
+
+app.post('/getArtistDataByRequestId', async (request, response) => {
+    try {
+        const { requestId } = sanitizeInputRequest(request.body);
+        const req = await getRequest(requestId);
+        if (req && req.takenBy) {
+            const artist = await getArtistData(req.takenBy);
+            response.send({ artist });
+        } else {
+            console.log('La solicitud no existe o aún no ha sido tomada');
+            response.send(500, 'La solicitud no existe o aún no ha sido tomada');
+        }
+    } catch (error) {
+        console.log(error);
+        response.send(500, 'Error al realizar la operación');
+        addException({ message: error, method: '/getArtistData', date: admin.firestore.FieldValue.serverTimestamp(), extra: request.body });
     }
 });
 
