@@ -29,7 +29,7 @@ exports.createRequestTrigger = functions.firestore.document('/solicitudes/{id}')
 
 exports.updateRequestTrigger = functions.firestore.document('/solicitudes/{id}').onUpdate(async (snap, context) => { // Se encarga de las estadísticas
     const { status: prevStatus } = snap.before.data();
-    const { takenBy, type, status: curStatus, name, email } = snap.after.data();
+    const { takenBy, type, status: curStatus, name, email, title } = snap.after.data();
     const requestId = context.params.id;
 
     if (prevStatus == 'DISPONIBLE' && curStatus == 'TOMADO') {
@@ -38,7 +38,7 @@ exports.updateRequestTrigger = functions.firestore.document('/solicitudes/{id}')
         await addDoneRequestStatistics(takenBy, type);
         return sendEmail(email,
             type == 'CRITICA' ? '¡Tu crítica Temple Luna está lista!' : type == 'DISENO' ? '¡Tu diseño Temple Luna está listo!' : '¡Tu solicitud Temple Luna está lista!',
-            `${process.env.URL_FRONT}?id=${requestId}&templated=true`,
+            `${process.env.URL_FRONT}?id=${requestId}&t=${encodeURIComponent(title)}&templated=true`,
             name,
             'https://www.facebook.com/groups/templeluna'
         );
