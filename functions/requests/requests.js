@@ -59,7 +59,7 @@ exports.getRequest = async (requestId) => {
     throw "La solicitud no existe";
 }
 
-exports.takeRequest = async (workerId, requestId, type, expDays) => {
+exports.takeRequest = async (workerId, requestId, expDays) => {
     let requestRef = await firestore.collection('solicitudes').doc(requestId);
     let doc = await requestRef.get();
 

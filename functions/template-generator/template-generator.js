@@ -39,7 +39,7 @@ exports.generateRequestTemplate = async (artist, requestId, title, intention, ho
     // Página 1
 
     // Versión
-    lastCoordinates = setText(pages[0], helveticaBold, 'V.1.1 Loedrin', 12, rgb(1, 1, 1), width1, 25, 'RIGHT', 20);
+    lastCoordinates = setText(pages[0], helveticaBold, 'V.2 Sorgalim', 12, rgb(1, 1, 1), width1, 25, 'RIGHT', 20);
 
     // Código QR
     const qrFile = await generateQRFile(`${process.env.URL_FRONT}?id=${requestId}`, 70);

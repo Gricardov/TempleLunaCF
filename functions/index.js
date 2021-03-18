@@ -21,6 +21,8 @@ const app = express();
 const cors = require('cors')({ origin: true });
 app.use(cors);
 
+const expDays = 7;
+
 exports.app = functions.https.onRequest(app);
 
 exports.createRequestTrigger = functions.firestore.document('/solicitudes/{id}').onCreate((snap, context) => {
@@ -49,7 +51,7 @@ app.post('/takeRequest', async (request, response) => {
     try {
         const { decoded, error } = await isAuthorized(request);
         if (!error) {
-            const { requestId, type, expDays } = sanitizeInputRequest(request.body);
+            const { requestId, type } = sanitizeInputRequest(request.body);
             await takeRequest(decoded.user_id, requestId, type, expDays);
             response.send({ ok: 'ok' });
         } else {
