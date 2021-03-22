@@ -39,7 +39,7 @@ exports.generateRequestTemplate = async (artist, requestId, title, intention, ho
     // Página 1
 
     // Versión
-    lastCoordinates = setText(pages[0], helveticaBold, 'V.2 Sorgalim', 12, rgb(1, 1, 1), width1, 25, 'RIGHT', 20);
+    lastCoordinates = setText(pages[0], helveticaBold, 'V.2.1 Sorgalim', 12, rgb(1, 1, 1), width1, 25, 'RIGHT', 20);
 
     // Código QR
     const qrFile = await generateQRFile(`${process.env.URL_FRONT}?id=${requestId}`, 70);
@@ -200,6 +200,54 @@ exports.generateRequestTemplate = async (artist, requestId, title, intention, ho
     }
 
     lastCoordinates = setParagraph(pdf, lastCoordinates.page, {
+        text: 'Siempre recuerda que...',
+        font: helveticaBold,
+        size: 12,
+        totalWidth: width3,
+        totalHeight: height3,
+        marginH,
+        marginV,
+        mode: 'CENTER',
+        lastCoordinates: { ...lastCoordinates, y: lastCoordinates.y - 60 }
+    });
+
+    lastCoordinates = setParagraph(pdf, lastCoordinates.page, {
+        text: 'Todos tenemos puntos fuertes y débiles. No te desanimes por los débiles, utiliza esa energía en mejorarlos. La vida está llena de críticas, saca lo mejor de ellas.',
+        font: helvetica,
+        size: 12,
+        totalWidth: width3,
+        totalHeight: height3,
+        marginH,
+        marginV,
+        mode: 'CENTER',
+        lastCoordinates: { ...lastCoordinates, y: lastCoordinates.y - 25 }
+    });  
+
+    lastCoordinates = setParagraph(pdf, lastCoordinates.page, {
+        text: '¡Consigue más lectores!',
+        font: helveticaBold,
+        size: 12,
+        totalWidth: width3,
+        totalHeight: height3,
+        marginH,
+        marginV,
+        mode: 'CENTER',
+        lastCoordinates: { ...lastCoordinates, y: lastCoordinates.y - 60 }
+    });
+
+    lastCoordinates = setParagraph(pdf, lastCoordinates.page, {
+        text: 'Si lo lees desde un navegador, encontrarás abajo el botón "Compartir". Úsalo para que más personas puedan acceder a tu obra desde esta página.',
+        font: helvetica,
+        size: 12,
+        totalWidth: width3,
+        totalHeight: height3,
+        marginH,
+        marginV,
+        mode: 'CENTER',
+        lastCoordinates: { ...lastCoordinates, y: lastCoordinates.y - 25 }
+    });
+
+    lastCoordinates = setParagraph(pdf, lastCoordinates.page, {
         text: '¿Te sirvió esta crítica?',
         font: helveticaBold,
         size: 12,
@@ -207,19 +255,19 @@ exports.generateRequestTemplate = async (artist, requestId, title, intention, ho
         totalHeight: height3,
         marginH,
         marginV,
-        mode: 'RIGHT',
+        mode: 'CENTER',
         lastCoordinates: { ...lastCoordinates, y: lastCoordinates.y - 60 }
     });
 
     lastCoordinates = setParagraph(pdf, lastCoordinates.page, {
-        text: 'Estás invitado a Temple Luna. Juntos seremos la más grande comunidad de lectores y escritores en latinoamérica.\nLink: https://www.facebook.com/groups/templeluna',
+        text: 'Te invitamos a Temple Luna, la gran comunidad de lectura de habla hispana. Visítanos en templeluna.app',
         font: helvetica,
         size: 12,
         totalWidth: width3,
         totalHeight: height3,
         marginH,
         marginV,
-        mode: 'RIGHT',
+        mode: 'CENTER',
         lastCoordinates: { ...lastCoordinates, y: lastCoordinates.y - 25 }
     });
 

@@ -6,6 +6,9 @@ admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
 });
 
+const fs = require('fs');
+var stream = require('stream');
+
 const express = require('express');
 const { generateRequestTemplate } = require('./template-generator/template-generator');
 const { sanitizeInputRequest, isAuthorized } = require('./helpers/functions');
@@ -139,6 +142,14 @@ app.post('/generateResultRequest', async (request, response) => {
         response.send(500, 'Error al realizar la operación');
         addException({ message: error, method: '/generateResultRequest', date: admin.firestore.FieldValue.serverTimestamp(), extra: request.body });
     }
+});
+
+// Testing
+app.get('/testTemplate', async (request, response) => {
+    const fileBuffer = await generateRequestTemplate({ fName: 'MILAGROS', lName: 'MARAVILLA', contactEmail: 'cora@gmail.com', networks: ['templeluna.app'] }, 'ID PRUEBA', 'TÍTULO', 'INTENCIÓN', 'ENGANCHE', 'ORTOGRAFIA', 'PUNTOS DE MEJORA');
+    var bufferStream = new stream.PassThrough();
+    bufferStream.end(Buffer.from(fileBuffer));
+    bufferStream.pipe(response);
 });
 
 app.get('/rel_statistics/', async (request, response) => {
