@@ -54,8 +54,8 @@ app.post('/takeRequest', async (request, response) => {
     try {
         const { decoded, error } = await isAuthorized(request);
         if (!error) {
-            const { requestId, type } = sanitizeInputRequest(request.body);
-            await takeRequest(decoded.user_id, requestId, type, expDays);
+            const { requestId } = sanitizeInputRequest(request.body);
+            await takeRequest(decoded.user_id, requestId, expDays);
             response.send({ ok: 'ok' });
         } else {
             response.send(405, 'No autorizado');

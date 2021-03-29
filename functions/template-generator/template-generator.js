@@ -39,7 +39,7 @@ exports.generateRequestTemplate = async (artist, requestId, title, intention, ho
     // Página 1
 
     // Versión
-    lastCoordinates = setText(pages[0], helveticaBold, 'V.2.1 Sorgalim', 12, rgb(1, 1, 1), width1, 25, 'RIGHT', 20);
+    lastCoordinates = setText(pages[0], helveticaBold, 'V.2.2 Sorgalim', 12, rgb(1, 1, 1), width1, 25, 'RIGHT', 20);
 
     // Código QR
     const qrFile = await generateQRFile(`${process.env.URL_FRONT}?id=${requestId}`, 70);
@@ -236,7 +236,7 @@ exports.generateRequestTemplate = async (artist, requestId, title, intention, ho
     });
 
     lastCoordinates = setParagraph(pdf, lastCoordinates.page, {
-        text: 'Si lo lees desde un navegador, encontrarás abajo el botón "Compartir". Úsalo para que más personas puedan acceder a tu obra desde esta página.',
+        text: 'Si lo lees desde un navegador, encontrarás abajo el botón "Comparte". Úsalo para que más personas puedan acceder a tu obra desde esta página.',
         font: helvetica,
         size: 12,
         totalWidth: width3,
