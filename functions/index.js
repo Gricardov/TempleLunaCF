@@ -6,14 +6,13 @@ admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
 });
 
-const fs = require('fs');
 var stream = require('stream');
 
 const express = require('express');
 const { generateRequestTemplate } = require('./template-generator/template-generator');
 const { sanitizeInputRequest, isAuthorized } = require('./helpers/functions');
 const { setRequestResultUrl, uploadResultRequest, getStatisticsByIds, getRequest, takeRequest, setRequestDone, addAvailableRequestStatistics, updateTakenRequestStatistics, addDoneRequestStatistics, addLove, addComment } = require('./requests/requests');
-const { getArtistData, getProfiles } = require('./users/users');
+const { createProfile, getArtistData, getProfiles } = require('./users/users');
 const { addException } = require('./exceptions/exceptions');
 const { sendEmail } = require('./mail/sender');
 
@@ -28,25 +27,49 @@ const expDays = 7;
 
 exports.app = functions.https.onRequest(app);
 
+// Triggers
+
+// Al crear un usuario
+exports.createUser = functions.auth.user().onCreate(user => {
+    try {
+        return createProfile(user);
+    } catch (error) {
+        console.log(error);
+        addException({ message: error, method: '/createUser', date: admin.firestore.FieldValue.serverTimestamp(), extra: user });
+    }
+})
+
+// Al crear una solicitud
 exports.createRequestTrigger = functions.firestore.document('/solicitudes/{id}').onCreate((snap, context) => {
-    return addAvailableRequestStatistics(snap.data().type);
+    try {
+        return addAvailableRequestStatistics(snap.data().type);
+    } catch (error) {
+        console.log(error);
+        addException({ message: error, method: '/createRequestTrigger', date: admin.firestore.FieldValue.serverTimestamp(), extra: snap });
+    }
 });
 
+// Al actualizar el estado de una solicitud
 exports.updateRequestTrigger = functions.firestore.document('/solicitudes/{id}').onUpdate(async (snap, context) => { // Se encarga de las estadísticas
-    const { status: prevStatus } = snap.before.data();
-    const { takenBy, type, status: curStatus, name, email, title } = snap.after.data();
-    const requestId = context.params.id;
+    try {
+        const { status: prevStatus } = snap.before.data();
+        const { takenBy, type, status: curStatus, name, email, title } = snap.after.data();
+        const requestId = context.params.id;
 
-    if (prevStatus == 'DISPONIBLE' && curStatus == 'TOMADO') {
-        return updateTakenRequestStatistics(takenBy, type);
-    } else if (prevStatus == 'TOMADO' && curStatus == 'HECHO') {
-        await addDoneRequestStatistics(takenBy, type);
-        return sendEmail(email,
-            type == 'CRITICA' ? '¡Tu crítica Temple Luna está lista!' : type == 'DISENO' ? '¡Tu diseño Temple Luna está listo!' : '¡Tu solicitud Temple Luna está lista!',
-            `${process.env.URL_FRONT}?id=${requestId}&t=${encodeURIComponent(title)}&templated=true`,
-            name,
-            'https://www.facebook.com/groups/templeluna'
-        );
+        if (prevStatus == 'DISPONIBLE' && curStatus == 'TOMADO') {
+            return updateTakenRequestStatistics(takenBy, type);
+        } else if (prevStatus == 'TOMADO' && curStatus == 'HECHO') {
+            await addDoneRequestStatistics(takenBy, type);
+            return sendEmail(email,
+                type == 'CRITICA' ? '¡Tu crítica Temple Luna está lista!' : type == 'DISENO' ? '¡Tu diseño Temple Luna está listo!' : '¡Tu solicitud Temple Luna está lista!',
+                `${process.env.URL_FRONT}?id=${requestId}&t=${encodeURIComponent(title)}&templated=true`,
+                name,
+                'https://www.facebook.com/groups/templeluna'
+            );
+        }
+    } catch (error) {
+        console.log(error);
+        addException({ message: error, method: '/updateRequestTrigger', date: admin.firestore.FieldValue.serverTimestamp(), extra: snap });
     }
 });
 

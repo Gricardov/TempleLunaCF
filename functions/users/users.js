@@ -1,6 +1,15 @@
 const admin = require("firebase-admin");
 const firestore = admin.firestore();
 
+exports.createProfile = async (user) => {
+    return firestore.collection('perfiles').doc(user.uid).set({
+        contactEmail: user.email,
+        fName: 'Nuevo',
+        lName: 'Usuario',
+        networks: []
+    }, { merge: true });
+}
+
 exports.getArtistData = async userId => {
     let requestRef = await firestore.collection('perfiles').doc(userId);
     let doc = await requestRef.get();
