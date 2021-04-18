@@ -6,6 +6,8 @@ exports.createProfile = async (user) => {
         contactEmail: user.email,
         fName: 'Nuevo',
         lName: 'Usuario',
+        roles: [],
+        services: [],
         networks: []
     }, { merge: true });
 }

@@ -11,7 +11,7 @@ var stream = require('stream');
 const express = require('express');
 const { generateRequestTemplate } = require('./template-generator/template-generator');
 const { sanitizeInputRequest, isAuthorized } = require('./helpers/functions');
-const { setRequestResultUrl, uploadResultRequest, getStatisticsByIds, getRequest, takeRequest, setRequestDone, addAvailableRequestStatistics, updateTakenRequestStatistics, addDoneRequestStatistics, addLove, addComment } = require('./requests/requests');
+const { setRequestResultUrl, uploadResultRequest, getStatisticsByIds, getRequest, takeRequest, setRequestDone, addAvailableRequestStatistics, updateTakenRequestStatistics, addDoneRequestStatistics, addLove, addComment, searchByPrefixTitle, searchByWorkerId } = require('./requests/requests');
 const { createProfile, getArtistData, getProfiles } = require('./users/users');
 const { addException } = require('./exceptions/exceptions');
 const { sendEmail } = require('./mail/sender');
@@ -169,13 +169,24 @@ app.post('/generateResultRequest', async (request, response) => {
 
 // Testing
 app.get('/testTemplate', async (request, response) => {
-    const fileBuffer = await generateRequestTemplate({ fName: 'MILAGROS', lName: 'MARAVILLA', contactEmail: 'cora@gmail.com', networks: ['templeluna.app'] }, 'ID PRUEBA', 'TÍTULO', 'INTENCIÓN', 'ENGANCHE', 'ORTOGRAFIA', 'PUNTOS DE MEJORA');
-    var bufferStream = new stream.PassThrough();
-    bufferStream.end(Buffer.from(fileBuffer));
-    bufferStream.pipe(response);
+    try {
+        const { decoded, error } = await isAuthorized(request);
+        if (!error) {
+            const fileBuffer = await generateRequestTemplate({ fName: 'MILAGROS', lName: 'MARAVILLA', contactEmail: 'cora@gmail.com', networks: ['templeluna.app'] }, 'ID PRUEBA', 'TÍTULO', 'INTENCIÓN', 'ENGANCHE', 'ORTOGRAFIA', 'PUNTOS DE MEJORA');
+            var bufferStream = new stream.PassThrough();
+            bufferStream.end(Buffer.from(fileBuffer));
+            bufferStream.pipe(response);
+        } else {
+            response.send(405, 'No autorizado');
+        }
+    } catch (error) {
+        console.log(error);
+        response.send(500, 'Error al realizar la operación');
+    }
+
 });
 
-app.get('/rel_statistics/', async (request, response) => {
+app.get('/genStatistics/', async (request, response) => {
     try {
         let textResult = '';
         const artistList = await getProfiles();
@@ -198,18 +209,81 @@ app.get('/rel_statistics/', async (request, response) => {
 
             textResult += fName + ' ' + lName + ' tiene en CRÍTICAS ' + (criTaken ? criTaken : '0') + ' tomadas, ' + (criDone ? criDone : '0') + '  hechas, DISEÑOS ' + (desTaken ? desTaken : '0') + ' tomadas, ' + (desDone ? desDone : '0') + ' hechas<br/>';
         })
-
         response.send(textResult);
 
     } catch (error) {
         console.log(error);
         response.send(500, 'Error al realizar la operación');
-        addException({ message: error, method: '/rel_statistics', date: admin.firestore.FieldValue.serverTimestamp(), extra: request.body });
+        //addException({ message: error, method: '/genStatistics', date: admin.firestore.FieldValue.serverTimestamp(), extra: request.query });
     }
-
 
 });
 
+app.get('/searchRequestsByTitlePrefixes/', async (request, response) => {
+    try {
+        let textResult = '';
+        const prefix = request.query.prefix;
+        const list = await searchByPrefixTitle(prefix);
+
+        list.map(({ title, id, takenBy, designType, type, status, name, phone, email }) => {
+            textResult += '<b>Título:</b> ' + title + '<br/>';
+            textResult += '<b>Id:</b> ' + id + '<br/>';
+            takenBy && (textResult += '<b>Tomado por:</b> ' + takenBy + '<br/>');
+            textResult += '<b>Tipo:</b> ' + type + '<br/>';
+            type == 'DISENO' && (textResult += '<b>Tipo de diseño:</b> ' + designType + '<br/>');
+            textResult += '<b>Estado:</b> ' + status + '<br/>';
+            textResult += '<b>Solicitante:</b> ' + name + '<br/>';
+            textResult += '<b>Teléfono:</b> ' + phone + '<br/>';
+            textResult += '<b>Email:</b> ' + email + '<br/>';
+            textResult += '<br/><br/>'
+        });
+
+        if (textResult) {
+            response.send(textResult);
+        } else {
+            response.send('La búsqueda no produjo resultados');
+        }
+
+    } catch (error) {
+        console.log(error);
+        response.send(500, 'Error al realizar la operación');
+        //addException({ message: error, method: '/searchRequestsByTitlePrefixes', date: admin.firestore.FieldValue.serverTimestamp(), extra: request.query });
+    }
+});
+
+app.get('/getRequestsByWorker/', async (request, response) => {
+    try {
+        let textResult = '';
+        const id = request.query.id;
+        const list = await searchByWorkerId(id, null, true);
+
+        list && list.length > 0 && (textResult += '<b>Total:</b> ' + list.length + '<br/><br/>');
+
+        list.map(({ title, id, takenBy, type, designType, status, name, phone, email }) => {
+            textResult += '<b>Título:</b> ' + title + '<br/>';
+            textResult += '<b>Id:</b> ' + id + '<br/>';
+            takenBy && (textResult += '<b>Tomado por:</b> ' + takenBy + '<br/>');
+            textResult += '<b>Tipo:</b> ' + type + '<br/>';
+            type == 'DISENO' && (textResult += '<b>Tipo de diseño:</b> ' + designType + '<br/>');
+            textResult += '<b>Estado:</b> ' + status + '<br/>';
+            textResult += '<b>Solicitante:</b> ' + name + '<br/>';
+            textResult += '<b>Teléfono:</b> ' + phone + '<br/>';
+            textResult += '<b>Email:</b> ' + email + '<br/>';
+            textResult += '<br/><br/>'
+        });
+
+        if (textResult) {
+            response.send(textResult);
+        } else {
+            response.send('La búsqueda no produjo resultados');
+        }
+
+    } catch (error) {
+        console.log(error);
+        response.send(500, 'Error al realizar la operación');
+        //addException({ message: error, method: '/getRequestsByWorker', date: admin.firestore.FieldValue.serverTimestamp(), extra: request.query });
+    }
+});
 
 /*app.get('/request-result/:requestId', async (request, response) => {
     try {

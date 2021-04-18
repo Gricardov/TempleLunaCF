@@ -146,3 +146,27 @@ exports.uploadResultRequest = async (fileBuffer, path, filename) => {
     });
     return urls[0];
 }
+
+exports.searchByPrefixTitle = async (text, limit = 3) => {
+    return firestore.collection('solicitudes').where('title', '>=', text).where('title', '<=', text + '\uf8ff')
+        .limit(limit)
+        .get()
+        .then(qsn => {
+            let list = [];
+            qsn.forEach(doc => list.push({ ...doc.data(), id: doc.id }));
+            return list;
+        })
+}
+
+exports.searchByWorkerId = async (workerId, limit = 3, ignoreLimit) => {
+    const ref = firestore.collection('solicitudes').where('takenBy', '==', workerId);
+    if (!ignoreLimit) {
+        ref = ref.limit(limit);
+    }
+    return ref.get()
+        .then(qsn => {
+            let list = [];
+            qsn.forEach(doc => list.push({ ...doc.data(), id: doc.id }));
+            return list;
+        });
+}
