@@ -293,7 +293,11 @@ app.get('/getEnrolledByEvent/', async (request, response) => {
         const id = request.query.id;
         const list = await searchEnrolledByEventId(id, null, true);
 
-        list && list.length > 0 && (textResult += '<b>Total:</b> ' + list.length + '<br/><br/>');
+        if (list && list.length > 0) {
+            textResult += '<b>Total:</b> ' + list.length + '<br/>';
+            textResult += '<b>Autores:</b> ' + list.filter(enr => enr.role == 'AUT').length + '<br/>';
+            textResult += '<b>Audiencia:</b> ' + list.filter(enr => enr.role == 'AUD').length + '<br/><br/>';
+        }
 
         list.map(({ name, createdAt, age, phone, email, id, role, link }) => {
             textResult += '<b>Id:</b> ' + id + '<br/>';
