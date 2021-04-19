@@ -7,11 +7,13 @@ admin.initializeApp({
 });
 
 var stream = require('stream');
-
+const moment = require('moment');
 const express = require('express');
+
 const { generateRequestTemplate } = require('./template-generator/template-generator');
-const { sanitizeInputRequest, isAuthorized } = require('./helpers/functions');
+const { sanitizeInputRequest, isAuthorized, getDateText } = require('./helpers/functions');
 const { setRequestResultUrl, uploadResultRequest, getStatisticsByIds, getRequest, takeRequest, setRequestDone, addAvailableRequestStatistics, updateTakenRequestStatistics, addDoneRequestStatistics, addLove, addComment, searchByPrefixTitle, searchByWorkerId } = require('./requests/requests');
+const { searchEnrolledByEventId } = require('./enrollments/enrollments');
 const { createProfile, getArtistData, getProfiles } = require('./users/users');
 const { addException } = require('./exceptions/exceptions');
 const { sendEmail } = require('./mail/sender');
@@ -267,6 +269,38 @@ app.get('/getRequestsByWorker/', async (request, response) => {
             type == 'DISENO' && (textResult += '<b>Tipo de diseño:</b> ' + designType + '<br/>');
             textResult += '<b>Estado:</b> ' + status + '<br/>';
             textResult += '<b>Solicitante:</b> ' + name + '<br/>';
+            textResult += '<b>Teléfono:</b> ' + phone + '<br/>';
+            textResult += '<b>Email:</b> ' + email + '<br/>';
+            textResult += '<br/><br/>'
+        });
+
+        if (textResult) {
+            response.send(textResult);
+        } else {
+            response.send('La búsqueda no produjo resultados');
+        }
+
+    } catch (error) {
+        console.log(error);
+        response.send(500, 'Error al realizar la operación');
+        //addException({ message: error, method: '/getRequestsByWorker', date: admin.firestore.FieldValue.serverTimestamp(), extra: request.query });
+    }
+});
+
+app.get('/getEnrolledByEvent/', async (request, response) => {
+    try {
+        let textResult = '';
+        const id = request.query.id;
+        const list = await searchEnrolledByEventId(id, null, true);
+
+        list && list.length > 0 && (textResult += '<b>Total:</b> ' + list.length + '<br/><br/>');
+
+        list.map(({ name, createdAt, age, phone, email, id, role }) => {
+            textResult += '<b>Id:</b> ' + id + '<br/>';
+            textResult += '<b>Participante:</b> ' + name + '<br/>';
+            textResult += '<b>Rol:</b> ' + role + '<br/>';
+            textResult += '<b>Unido en:</b> ' + getDateText(moment(createdAt._seconds * 1000).toDate()) + '<br/>';
+            textResult += '<b>Edad:</b> ' + age + '<br/>';
             textResult += '<b>Teléfono:</b> ' + phone + '<br/>';
             textResult += '<b>Email:</b> ' + email + '<br/>';
             textResult += '<br/><br/>'
