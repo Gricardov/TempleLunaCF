@@ -295,9 +295,10 @@ app.get('/getEnrolledByEvent/', async (request, response) => {
 
         list && list.length > 0 && (textResult += '<b>Total:</b> ' + list.length + '<br/><br/>');
 
-        list.map(({ name, createdAt, age, phone, email, id, role }) => {
+        list.map(({ name, createdAt, age, phone, email, id, role, link }) => {
             textResult += '<b>Id:</b> ' + id + '<br/>';
             textResult += '<b>Participante:</b> ' + name + '<br/>';
+            role == 'AUT' && (textResult += '<b>Link:</b> ' + link + '<br/>');
             textResult += '<b>Rol:</b> ' + role + '<br/>';
             textResult += '<b>Unido en:</b> ' + getDateText(moment(createdAt._seconds * 1000).toDate()) + '<br/>';
             textResult += '<b>Edad:</b> ' + age + '<br/>';
