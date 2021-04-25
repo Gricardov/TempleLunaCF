@@ -12,7 +12,7 @@ const express = require('express');
 
 const { generateRequestTemplate } = require('./template-generator/template-generator');
 const { sanitizeInputRequest, isAuthorized, getDateText } = require('./helpers/functions');
-const { setRequestResultUrl, uploadResultRequest, getStatisticsByIds, getRequest, takeRequest, setRequestDone, addAvailableRequestStatistics, updateTakenRequestStatistics, addDoneRequestStatistics, addLove, addComment, searchByPrefixTitle, searchByWorkerId } = require('./requests/requests');
+const { setRequestResultUrl, uploadResultRequest, getStatisticsByIds, getRequest, takeRequest, setRequestDone, resignRequest, addAvailableRequestStatistics, updateTakenRequestStatistics, addDoneRequestStatistics, updateResignedRequestStatistics, addLove, addComment, searchByPrefixTitle, searchByWorkerId } = require('./requests/requests');
 const { searchEnrolledByEventId } = require('./enrollments/enrollments');
 const { createProfile, getArtistData, getProfiles } = require('./users/users');
 const { addException } = require('./exceptions/exceptions');
@@ -55,7 +55,7 @@ exports.createRequestTrigger = functions.firestore.document('/solicitudes/{id}')
 exports.updateRequestTrigger = functions.firestore.document('/solicitudes/{id}').onUpdate(async (snap, context) => { // Se encarga de las estadísticas
     try {
         const { status: prevStatus } = snap.before.data();
-        const { takenBy, type, status: curStatus, name, email, title } = snap.after.data();
+        const { resignedFrom, takenBy, type, status: curStatus, name, email, title } = snap.after.data();
         const requestId = context.params.id;
 
         if (prevStatus == 'DISPONIBLE' && curStatus == 'TOMADO') {
@@ -68,6 +68,8 @@ exports.updateRequestTrigger = functions.firestore.document('/solicitudes/{id}')
                 name,
                 'https://www.facebook.com/groups/templeluna'
             );
+        } else if (prevStatus == 'TOMADO' && curStatus == 'DISPONIBLE') {
+            return updateResignedRequestStatistics(resignedFrom, type);
         }
     } catch (error) {
         console.log(error);
@@ -170,22 +172,29 @@ app.post('/generateResultRequest', async (request, response) => {
 });
 
 // Testing
+// Hasta que no haga un panel de admin
+app.get('/resignRequest', async (request, response) => {
+    try {
+        const requestId = request.query.id;
+        await resignRequest(requestId);
+        response.send({ ok: 'ok' });
+    } catch (error) {
+        console.log(error);
+        response.send(500, 'Error al realizar la operación');
+        addException({ message: error, method: '/resignRequest', date: admin.firestore.FieldValue.serverTimestamp(), extra: request.body });
+    }
+});
+
 app.get('/testTemplate', async (request, response) => {
     try {
-        const { decoded, error } = await isAuthorized(request);
-        if (!error) {
-            const fileBuffer = await generateRequestTemplate({ fName: 'MILAGROS', lName: 'MARAVILLA', contactEmail: 'cora@gmail.com', networks: ['templeluna.app'] }, 'ID PRUEBA', 'TÍTULO', 'INTENCIÓN', 'ENGANCHE', 'ORTOGRAFIA', 'PUNTOS DE MEJORA');
-            var bufferStream = new stream.PassThrough();
-            bufferStream.end(Buffer.from(fileBuffer));
-            bufferStream.pipe(response);
-        } else {
-            response.send(405, 'No autorizado');
-        }
+        const fileBuffer = await generateRequestTemplate({ fName: 'MILAGROS', lName: 'MARAVILLA', contactEmail: 'cora@gmail.com', networks: ['templeluna.app'] }, 'ID PRUEBA', 'TÍTULO', 'INTENCIÓN', 'ENGANCHE', 'ORTOGRAFIA', 'PUNTOS DE MEJORA');
+        var bufferStream = new stream.PassThrough();
+        bufferStream.end(Buffer.from(fileBuffer));
+        bufferStream.pipe(response);
     } catch (error) {
         console.log(error);
         response.send(500, 'Error al realizar la operación');
     }
-
 });
 
 app.get('/genStatistics/', async (request, response) => {

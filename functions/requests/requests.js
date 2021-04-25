@@ -51,6 +51,23 @@ exports.addDoneRequestStatistics = async (workerId, type) => {
     }, { merge: true });
 }
 
+exports.updateResignedRequestStatistics = async (workerId, type) => {
+    const refStatistics = firestore.collection('estadisticas').doc(type);
+    return firestore.runTransaction(async transaction => {
+        let doc2 = await transaction.get(refStatistics);
+        if (doc2.exists) {
+            await transaction.set(refStatistics, {
+                available: admin.firestore.FieldValue.increment(1)
+            }, { merge: true });
+        }
+
+        let statisticsRef2 = firestore.collection('estadisticas').doc(workerId + '-' + type);
+        return statisticsRef2.set({
+            taken: admin.firestore.FieldValue.increment(-1)
+        }, { merge: true });
+    });
+}
+
 exports.getRequest = async (requestId) => {
     const result = await firestore.collection('solicitudes').doc(requestId).get();
     if (result.exists) {
@@ -77,7 +94,27 @@ exports.takeRequest = async (workerId, requestId, expDays) => {
     }
 }
 
-exports.setRequestDone = async (workerId, requestId, type) => {
+exports.resignRequest = async (requestId) => {
+    let requestRef = await firestore.collection('solicitudes').doc(requestId);
+    let doc = await requestRef.get();
+
+    if (doc.exists) {
+        const registry = doc.data();
+        if (registry.status == 'TOMADO') { // Solo se va a regresar uno tomado
+            return requestRef.update({
+                takenBy: '',
+                resignedFrom: registry.takenBy,
+                status: 'DISPONIBLE',
+                takenAt: null,
+                expDate: null
+            });
+        } else {
+            throw "La solicitud no ha sido tomada";
+        }
+    }
+}
+
+exports.setRequestDone = async (workerId, requestId) => {
     let requestRef = firestore.collection('solicitudes').doc(requestId); // Actualizo el estado de la solicitud
     return requestRef.update({
         takenBy: workerId,

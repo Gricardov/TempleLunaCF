@@ -10,6 +10,8 @@ const templateRequest = fs.readFileSync(__dirname + '/../templates/sample.pdf');
 //const segoeUIFont = fs.readFileSync('./fonts/SegoeUI.ttf');
 //const segoeUIBoldFont = fs.readFileSync('./fonts/SegoeUI-Bold.ttf');
 
+// Las coordenadas inician desde la esquina inferior izquierda
+
 exports.generateRequestTemplate = async (artist, requestId, title, intention, hook, ortography, improvement) => {
     // Documento principal
     const pdf = await PDFDocument.load(templateRequest);
