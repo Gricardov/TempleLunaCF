@@ -6,6 +6,9 @@ exports.createProfile = async (user) => {
         contactEmail: user.email,
         fName: 'Nuevo',
         lName: 'Usuario',
+        urlImg: '',
+        likes: 0,
+        views: 0,
         roles: [],
         services: [],
         networks: []

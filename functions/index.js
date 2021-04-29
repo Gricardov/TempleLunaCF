@@ -19,6 +19,7 @@ const { addException } = require('./exceptions/exceptions');
 const { sendEmail } = require('./mail/sender');
 
 const { v4: uuidv4 } = require('uuid');
+const { text } = require("express");
 require('dotenv').config();
 
 const app = express();
@@ -308,11 +309,12 @@ app.get('/getEnrolledByEvent/', async (request, response) => {
             textResult += '<b>Audiencia:</b> ' + list.filter(enr => enr.role == 'AUD').length + '<br/><br/>';
         }
 
-        list.map(({ name, createdAt, age, phone, email, id, role, link }) => {
+        list.map(({ name, createdAt, age, phone, email, id, role, link, urlImgInv }) => {
             textResult += '<b>Id:</b> ' + id + '<br/>';
             textResult += '<b>Participante:</b> ' + name + '<br/>';
             role == 'AUT' && (textResult += '<b>Link:</b> <a target="_blank" href=' + link + '>' + link + '</a><br/>');
             textResult += '<b>Rol:</b> ' + role + '<br/>';
+            textResult += '<b>Url comprobante:</b> <a target="_blank" href=' + urlImgInv + '>Aquí</a><br/>';
             textResult += '<b>Unido en:</b> ' + getDateText(moment(createdAt._seconds * 1000).toDate()) + '<br/>';
             textResult += '<b>Edad:</b> ' + age + '<br/>';
             textResult += '<b>Teléfono:</b> ' + phone + '<br/>';
