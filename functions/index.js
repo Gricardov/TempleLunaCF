@@ -1,14 +1,19 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const serviceAccount = require("./key.json");
+const stream = require('stream');
+const moment = require('moment');
+const express = require('express');
+const { v4: uuidv4 } = require('uuid');
+require('dotenv').config();
+
+const app = express();
+const cors = require('cors')({ origin: true });
+app.use(cors);
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
 });
-
-var stream = require('stream');
-const moment = require('moment');
-const express = require('express');
 
 const { generateRequestTemplate } = require('./template-generator/template-generator');
 const { sanitizeInputRequest, isAuthorized, getDateText } = require('./helpers/functions');
@@ -18,17 +23,12 @@ const { createProfile, getArtistData, getProfiles } = require('./users/users');
 const { addException } = require('./exceptions/exceptions');
 const { sendEmail } = require('./mail/sender');
 
-const { v4: uuidv4 } = require('uuid');
-const { text } = require("express");
-require('dotenv').config();
-
-const app = express();
-const cors = require('cors')({ origin: true });
-app.use(cors);
-
 const expDays = 7;
 
-exports.app = functions.https.onRequest(app);
+exports.app = functions.runWith({
+    timeoutSeconds: 300,
+    memory: '1GB'
+}).https.onRequest(app);
 
 // Triggers
 
@@ -63,8 +63,9 @@ exports.updateRequestTrigger = functions.firestore.document('/solicitudes/{id}')
             return updateTakenRequestStatistics(takenBy, type);
         } else if (prevStatus == 'TOMADO' && curStatus == 'HECHO') {
             await addDoneRequestStatistics(takenBy, type);
+
             return sendEmail(email,
-                type == 'CRITICA' ? '¡Tu crítica Temple Luna está lista!' : type == 'DISENO' ? '¡Tu diseño Temple Luna está listo!' : '¡Tu solicitud Temple Luna está lista!',
+                type == 'CRITICA' ? '¡Tu crítica Temple Luna está lista!' : type == 'DISENO' ? '¡Tu diseño Temple Luna está listo!' : type == 'CORRECCION' ? '¡Tu corrección Temple Luna está listo!' : '¡Tu solicitud Temple Luna está lista!',
                 `${process.env.URL_FRONT}?id=${requestId}&t=${encodeURIComponent(title)}&templated=true`,
                 name,
                 'https://www.facebook.com/groups/templeluna'
@@ -123,21 +124,20 @@ app.post('/addComment', async (request, response) => {
     }
 });
 
-app.post('/getArtistDataByRequestId', async (request, response) => {
+app.post('/getArtistDataById', async (request, response) => {
     try {
-        const { requestId } = sanitizeInputRequest(request.body);
-        const req = await getRequest(requestId);
-        if (req && req.takenBy) {
-            const artist = await getArtistData(req.takenBy);
-            response.send({ artist });
+        const { id } = sanitizeInputRequest(request.body);
+        const artist = await getArtistData(id);
+        if (artist) {
+            response.send({ networks: [], services: [], roles: [], ...artist });
         } else {
-            console.log('La solicitud no existe o aún no ha sido tomada');
-            response.send(500, 'La solicitud no existe o aún no ha sido tomada');
+            console.log('No existe el artista');
+            response.send(500, 'No existe el artista');
         }
     } catch (error) {
         console.log(error);
         response.send(500, 'Error al realizar la operación');
-        addException({ message: error, method: '/getArtistData', date: admin.firestore.FieldValue.serverTimestamp(), extra: request.body });
+        addException({ message: error, method: '/getArtistDataById', date: admin.firestore.FieldValue.serverTimestamp(), extra: request.body });
     }
 });
 
@@ -146,12 +146,21 @@ app.post('/generateResultRequest', async (request, response) => {
         const { decoded, error } = await isAuthorized(request);
         if (!error) {
             let url;
-            const { requestId, type, title, intention, hook, ortography, improvement, urlResult, comment } = sanitizeInputRequest(request.body);
+            let artist;
+            let fileBuffer;
+            const { requestId, type, title, intention, hook, ortography, improvement, urlResult, correctedText } = sanitizeInputRequest(request.body);
             switch (type) {
                 case 'CRITICA':
-                    const artist = await getArtistData(decoded.user_id);
-                    const fileBuffer = await generateRequestTemplate(artist, requestId, title, intention, hook, ortography, improvement);
+                    artist = await getArtistData(decoded.user_id);
+                    fileBuffer = await generateRequestTemplate(type, artist, requestId, title, intention, hook, ortography, improvement);
                     url = await uploadResultRequest(fileBuffer, 'solicitud-critica', uuidv4());
+                    await setRequestResultUrl(requestId, url);
+                    await setRequestDone(decoded.user_id, requestId, type);
+                    break;
+                case 'CORRECCION':
+                    artist = await getArtistData(decoded.user_id);
+                    fileBuffer = await generateRequestTemplate(type, artist, requestId, title, undefined, undefined, undefined, improvement, correctedText);
+                    url = await uploadResultRequest(fileBuffer, 'solicitud-correccion', uuidv4());
                     await setRequestResultUrl(requestId, url);
                     await setRequestDone(decoded.user_id, requestId, type);
                     break;
@@ -186,9 +195,9 @@ app.get('/resignRequest', async (request, response) => {
     }
 });
 
-app.get('/testTemplate', async (request, response) => {
+app.get('/testTemplate/:id', async (request, response) => {
     try {
-        const fileBuffer = await generateRequestTemplate({ fName: 'MILAGROS', lName: 'MARAVILLA', contactEmail: 'cora@gmail.com', networks: ['templeluna.app'] }, 'ID PRUEBA', 'TÍTULO', 'INTENCIÓN', 'ENGANCHE', 'ORTOGRAFIA', 'PUNTOS DE MEJORA');
+        const fileBuffer = await generateRequestTemplate(request.params.id, { fName: 'MILAGROS', lName: 'MARAVILLA', contactEmail: 'cora@gmail.com', networks: ['templeluna.app'] }, 'ID PRUEBA', 'TÍTULO', 'INTENCIÓN', 'ENGANCHE', 'ORTOGRAFIA', 'PUNTOS DE MEJORA');
         var bufferStream = new stream.PassThrough();
         bufferStream.end(Buffer.from(fileBuffer));
         bufferStream.pipe(response);

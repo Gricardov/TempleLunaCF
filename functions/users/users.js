@@ -20,8 +20,7 @@ exports.getArtistData = async userId => {
     let doc = await requestRef.get();
 
     if (doc.exists) {
-        const { fName, lName, imgUrl, contactEmail, networks } = doc.data();
-        return { fName, lName, imgUrl, contactEmail, networks };
+        return { ...doc.data(), id: doc.id };
     } else {
         throw "El usuario no existe";
     }
