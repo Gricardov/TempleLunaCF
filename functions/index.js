@@ -213,22 +213,32 @@ app.get('/genStatistics/', async (request, response) => {
         const artistList = await getProfiles();
         const arrRequestDesign = artistList.map(artist => artist.id + '-DISENO').concat(['DISENO']);
         const arrRequestCritique = artistList.map(artist => artist.id + '-CRITICA').concat(['CRITICA']);
-        const statisticsList = await getStatisticsByIds(arrRequestDesign.concat(arrRequestCritique));
+        const arrRequestCorrection = artistList.map(artist => artist.id + '-CORRECCION').concat(['CORRECCION']);
+        const statisticsList = await getStatisticsByIds(arrRequestDesign.concat(arrRequestCritique).concat(arrRequestCorrection));
 
         let totDisNum = statisticsList.find(res => res.id === 'DISENO');
         let totCriNum = statisticsList.find(res => res.id === 'CRITICA');
+        let totCorNum = statisticsList.find(res => res.id === 'CORRECCION');
 
         textResult += (totCriNum ? totCriNum.available : '0') + ' críticas disponibles en total<br/>';
-        textResult += (totDisNum ? totDisNum.available : '0') + ' diseños disponibles en total<br/><br/>';
+        textResult += (totDisNum ? totDisNum.available : '0') + ' diseños disponibles en total<br/>';
+        textResult += (totCorNum ? totCorNum.available : '0') + ' correcciones disponibles en total<br/><br/>';
 
         artistList.map(({ fName, lName, id }) => {
             let criNum = statisticsList.find(res => res.id === id + '-CRITICA');
             let desNum = statisticsList.find(res => res.id === id + '-DISENO');
+            let corNum = statisticsList.find(res => res.id === id + '-CORRECCION');
 
             const { taken: criTaken, done: criDone } = criNum || {};
             const { taken: desTaken, done: desDone } = desNum || {};
+            const { taken: corTaken, done: corDone } = corNum || {};
 
-            textResult += fName + ' ' + lName + ' tiene en CRÍTICAS ' + (criTaken ? criTaken : '0') + ' tomadas, ' + (criDone ? criDone : '0') + '  hechas, DISEÑOS ' + (desTaken ? desTaken : '0') + ' tomadas, ' + (desDone ? desDone : '0') + ' hechas<br/>';
+            textResult +=
+                fName + ' ' + lName + ' tiene en ' +
+                'CRÍTICAS ' + (criTaken ? criTaken : '0') + ' tomadas, ' + (criDone ? criDone : '0') + '  hechas, ' +
+                'DISEÑOS ' + (desTaken ? desTaken : '0') + ' tomadas, ' + (desDone ? desDone : '0') + ' hechas, ' +
+                'CORRECCIONES ' + (corTaken ? corTaken : '0') + ' tomadas, ' + (corDone ? corDone : '0') + ' hechas, ' +
+                '<br/>';
         })
         response.send(textResult);
 
