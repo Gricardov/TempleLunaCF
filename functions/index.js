@@ -65,7 +65,7 @@ exports.updateRequestTrigger = functions.firestore.document('/solicitudes/{id}')
             await addDoneRequestStatistics(takenBy, type);
 
             return sendEmail(email,
-                type == 'CRITICA' ? '¡Tu crítica Temple Luna está lista!' : type == 'DISENO' ? '¡Tu diseño Temple Luna está listo!' : type == 'CORRECCION' ? '¡Tu corrección Temple Luna está listo!' : '¡Tu solicitud Temple Luna está lista!',
+                type == 'CRITICA' ? '¡Tu crítica Temple Luna está lista!' : type == 'DISENO' ? '¡Tu diseño Temple Luna está listo!' : type == 'CORRECCION' ? '¡Tu corrección Temple Luna está lista!' : '¡Tu solicitud Temple Luna está lista!',
                 `${process.env.URL_FRONT}?id=${requestId}&t=${encodeURIComponent(title)}&templated=true`,
                 name.split(' ')[0],
                 'https://www.facebook.com/groups/templeluna'
