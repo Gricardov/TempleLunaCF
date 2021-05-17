@@ -55,24 +55,32 @@ exports.createRequestTrigger = functions.firestore.document('/solicitudes/{id}')
 // Al actualizar el estado de una solicitud
 exports.updateRequestTrigger = functions.firestore.document('/solicitudes/{id}').onUpdate(async (snap, context) => { // Se encarga de las estadísticas
     try {
-        const { status: prevStatus } = snap.before.data();
-        const { resignedFrom, takenBy, type, status: curStatus, name, email, title } = snap.after.data();
+        const { status: prevStatus, likes: prevLikes, feedback: prevFeedback } = snap.before.data();
+        const { resignedFrom, takenBy, type, status: curStatus, name, email, title, takenBy, likes: curLikes, feedback: curFeedback } = snap.after.data();
         const requestId = context.params.id;
 
+        // Actualiza las estadísticas (o envía correo) de acuerdo al estado de la solicitud
         if (prevStatus == 'DISPONIBLE' && curStatus == 'TOMADO') {
             return updateTakenRequestStatistics(takenBy, type);
         } else if (prevStatus == 'TOMADO' && curStatus == 'HECHO') {
             await addDoneRequestStatistics(takenBy, type);
-
-            return sendEmail(email,
-                type == 'CRITICA' ? '¡Tu crítica Temple Luna está lista!' : type == 'DISENO' ? '¡Tu diseño Temple Luna está listo!' : type == 'CORRECCION' ? '¡Tu corrección Temple Luna está lista!' : '¡Tu solicitud Temple Luna está lista!',
-                `${process.env.URL_FRONT}?id=${requestId}&t=${encodeURIComponent(title)}&templated=true`,
-                name.split(' ')[0],
-                'https://www.facebook.com/groups/templeluna'
+            return sendEmail(email, name.split(' ')[0], 'REQUEST_DONE', { requestId, type, title }
             );
         } else if (prevStatus == 'TOMADO' && curStatus == 'DISPONIBLE') {
             return updateResignedRequestStatistics(resignedFrom, type);
         }
+
+        // Envía correo a los artistas si reciben un like o comentario
+        if (curStatus == 'HECHO') {
+            const artist = await getArtistData(takenBy);
+            if (prevLikes != curLikes) {
+                return sendEmail(artist.contactEmail, artist.fName, 'LIKE_GIVEN', { requestId, title });
+            }
+            if (prevFeedback != curFeedback) {
+                return sendEmail(artist.contactEmail, artist.fName, 'FEEDBACK_GIVEN', { requestId, title });
+            }
+        }
+
     } catch (error) {
         console.log(error);
         addException({ message: error, method: '/updateRequestTrigger', date: admin.firestore.FieldValue.serverTimestamp(), extra: snap });

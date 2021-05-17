@@ -69,7 +69,7 @@ const processCritique = async (artist, requestId, title, intention, hook, ortogr
     lastCoordinates = setText(pages[0], helveticaBold, 'V.2.2 Sorgalim', 12, rgb(1, 1, 1), width1, 25, 'RIGHT', 20);
 
     // Código QR
-    const qrFile = await generateQRFile(`${process.env.URL_FRONT}?id=${requestId}`, 70);
+    const qrFile = await generateQRFile(`${process.env.URL_FRONT}prev_resultado/?id=${requestId}`, 70);
     const pdfImg = await pdf.embedPng(qrFile);
     lastCoordinates = setImage(pages[0], pdfImg, 70, 70, width1 - pdfImg.width - 25, lastCoordinates.height + lastCoordinates.y + 15);
 
@@ -340,7 +340,7 @@ const processCorrection = async (artist, requestId, title, improvement, correcte
     lastCoordinates = setText(pages[0], helveticaBold, 'V.2.2 Sorgalim', 12, rgb(1, 1, 1), width1, 25, 'RIGHT', 20);
 
     // Código QR
-    const qrFile = await generateQRFile(`${process.env.URL_FRONT}?id=${requestId}`, 70);
+    const qrFile = await generateQRFile(`${process.env.URL_FRONT}prev_resultado/?id=${requestId}`, 70);
     const pdfImg = await pdf.embedPng(qrFile);
     lastCoordinates = setImage(pages[0], pdfImg, 70, 70, width1 - pdfImg.width - 25, lastCoordinates.height + lastCoordinates.y + 15);
 
