@@ -56,7 +56,7 @@ exports.createRequestTrigger = functions.firestore.document('/solicitudes/{id}')
 exports.updateRequestTrigger = functions.firestore.document('/solicitudes/{id}').onUpdate(async (snap, context) => { // Se encarga de las estadísticas
     try {
         const { status: prevStatus, likes: prevLikes, feedback: prevFeedback } = snap.before.data();
-        const { resignedFrom, takenBy, type, status: curStatus, name, email, title, takenBy, likes: curLikes, feedback: curFeedback } = snap.after.data();
+        const { resignedFrom, takenBy, type, status: curStatus, name, email, title, likes: curLikes, feedback: curFeedback } = snap.after.data();
         const requestId = context.params.id;
 
         // Actualiza las estadísticas (o envía correo) de acuerdo al estado de la solicitud
