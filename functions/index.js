@@ -211,7 +211,7 @@ app.post('/generateResultRequest', async (request, response) => {
 app.get('/resignRequest', async (request, response) => {
     try {
         const requestId = request.query.id;
-        await resignRequest(requestId);
+        await resignRequest(null, requestId, true);
         response.send({ ok: 'ok' });
     } catch (error) {
         console.log(error);

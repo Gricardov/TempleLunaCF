@@ -95,13 +95,13 @@ exports.takeRequest = async (workerId, requestId, expDays) => {
     }
 }
 
-exports.resignRequest = async (workerId, requestId) => {
+exports.resignRequest = async (workerId, requestId, isAdmin) => {
     let requestRef = await firestore.collection('solicitudes').doc(requestId);
     let doc = await requestRef.get();
 
     if (doc.exists) {
         const { takenBy, status } = doc.data();
-        if (status == 'TOMADO' && takenBy == workerId) { // Solo va a devolver uno tomado por la misma persona que lo solicita
+        if (status == 'TOMADO' && (takenBy == workerId || isAdmin)) { // Solo va a devolver uno tomado por la misma persona que lo solicita
             return requestRef.update({
                 takenBy: '',
                 resignedFrom: takenBy,
