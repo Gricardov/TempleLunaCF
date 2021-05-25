@@ -81,7 +81,8 @@ exports.takeRequest = async (workerId, requestId, expDays) => {
     let doc = await requestRef.get();
 
     if (doc.exists) {
-        if (doc.data().status == 'DISPONIBLE') { // Solo se va a tomar uno disponible
+        const { status } = doc.data();
+        if (status == 'DISPONIBLE') { // Solo se va a tomar uno disponible
             return requestRef.update({
                 takenBy: workerId,
                 status: 'TOMADO',
@@ -94,16 +95,17 @@ exports.takeRequest = async (workerId, requestId, expDays) => {
     }
 }
 
-exports.resignRequest = async (requestId) => {
+exports.resignRequest = async (workerId, requestId) => {
     let requestRef = await firestore.collection('solicitudes').doc(requestId);
     let doc = await requestRef.get();
 
     if (doc.exists) {
-        const registry = doc.data();
-        if (registry.status == 'TOMADO') { // Solo se va a regresar uno tomado
+        const { takenBy, status } = doc.data();
+        if (status == 'TOMADO' && takenBy == workerId) { // Solo va a devolver uno tomado por la misma persona que lo solicita
             return requestRef.update({
                 takenBy: '',
-                resignedFrom: registry.takenBy,
+                resignedFrom: takenBy,
+                resignedAt: new Date(),
                 status: 'DISPONIBLE',
                 takenAt: null,
                 expDate: null
@@ -163,7 +165,7 @@ exports.addComment = async (requestId, alias, message) => {
         feedback: {
             alias,
             message,
-            createdAt: admin.firestore.FieldValue.serverTimestamp()
+            createdAt: new Date()
         }
     }, { merge: true });
 }

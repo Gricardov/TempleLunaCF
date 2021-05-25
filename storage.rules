@@ -12,7 +12,7 @@ service firebase.storage {
     match /inscripcion/{fileId} {      
       allow write: if request.resource.size < 5 * 1024 * 1024
                    && request.resource.contentType.matches('image/.*');
-      allow read: if false;
+      allow read: if true;
     }
     match /miscelanea/{fileId} {
       allow write: if false;

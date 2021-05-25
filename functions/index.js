@@ -104,6 +104,23 @@ app.post('/takeRequest', async (request, response) => {
     }
 });
 
+app.post('/resignRequest', async (request, response) => {
+    try {
+        const { decoded, error } = await isAuthorized(request);
+        if (!error) {
+            const { requestId } = sanitizeInputRequest(request.body);
+            await resignRequest(decoded.user_id, requestId);
+            response.send({ ok: 'ok' });
+        } else {
+            response.send(405, 'No autorizado');
+        }
+    } catch (error) {
+        console.log(error);
+        response.send(500, 'Error al realizar la operación');
+        addException({ message: error, method: '/resignRequest', date: admin.firestore.FieldValue.serverTimestamp(), extra: request.body });
+    }
+});
+
 app.post('/addLove', async (request, response) => {
     try {
         const { id: requestId, direction } = sanitizeInputRequest(request.body);
@@ -242,7 +259,7 @@ app.get('/genStatistics/', async (request, response) => {
             const { taken: corTaken, done: corDone } = corNum || {};
 
             textResult +=
-                fName + ' ' + lName + ' tiene en ' +
+                fName + ' ' + lName + '( ' + id + ' ) tiene en ' +
                 'CRÍTICAS ' + (criTaken ? criTaken : '0') + ' tomadas, ' + (criDone ? criDone : '0') + '  hechas, ' +
                 'DISEÑOS ' + (desTaken ? desTaken : '0') + ' tomadas, ' + (desDone ? desDone : '0') + ' hechas, ' +
                 'CORRECCIONES ' + (corTaken ? corTaken : '0') + ' tomadas, ' + (corDone ? corDone : '0') + ' hechas, ' +
