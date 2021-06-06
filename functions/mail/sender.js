@@ -6,18 +6,21 @@ require('dotenv').config();
 exports.sendEmail = (receiver, receiverName, type = 'REQUEST_DONE', extraData) => {
 
     const transporter = nodemailer.createTransport({
-        service: 'gmail',
+        //service: 'gmail',
+        host: 'smtp.zoho.com',
+        port: 465,
+        secure: true,
         auth: {
-            user: 'templelunalye@gmail.com',
-            pass: process.env.TEMP_KEY
+            user: process.env.TEMP_Z_USER,
+            pass: process.env.TEMP_Z_KEY
         }
     });
 
-    let subject = '';
-    let linkTo = '';
+    let subject = 'Test email';
+    let linkTo = 'https://templeluna.app';
     let joinLink = process.env.URL_GROUP_FB;
-    let altText = '';
-    let htmlText = '';
+    let altText = 'This is a test mail';
+    let htmlText = 'This is a test mail';
 
     switch (type) {
         case 'REQUEST_DONE':
@@ -50,7 +53,7 @@ exports.sendEmail = (receiver, receiverName, type = 'REQUEST_DONE', extraData) =
 
         case 'LIKE_GIVEN':
             {
-                const { title, requestId } = extraData;
+                const { title } = extraData;
 
                 subject = '¡Has recibido un corazón!';
                 linkTo = `${process.env.URL_FRONT}admin/`;
@@ -64,7 +67,7 @@ exports.sendEmail = (receiver, receiverName, type = 'REQUEST_DONE', extraData) =
     }
 
     const mailOptions = {
-        from: 'Temple Luna <templelunalye@gmail.com',
+        from: `"${process.env.TEMP_Z_SENDER}" <${process.env.TEMP_Z_USER}>`,
         to: receiver,
         subject,
         text: altText,

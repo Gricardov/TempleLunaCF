@@ -4,19 +4,23 @@ const serviceAccount = require("./key.json");
 const stream = require('stream');
 const moment = require('moment');
 const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors')({ origin: true });
 const { v4: uuidv4 } = require('uuid');
+
 require('dotenv').config();
 
 const app = express();
-const cors = require('cors')({ origin: true });
 app.use(cors);
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
 });
 
 const { generateRequestTemplate } = require('./template-generator/template-generator');
-const { sanitizeInputRequest, isAuthorized, getDateText } = require('./helpers/functions');
+const { isAuthorized, getDateText } = require('./helpers/functions');
 const { setRequestResultUrl, uploadResultRequest, getStatisticsByIds, getRequest, takeRequest, setRequestDone, resignRequest, addAvailableRequestStatistics, updateTakenRequestStatistics, addDoneRequestStatistics, updateResignedRequestStatistics, addLove, addComment, searchByPrefixTitle, searchByWorkerId } = require('./requests/requests');
 const { searchEnrolledByEventId } = require('./enrollments/enrollments');
 const { createProfile, getArtistData, getProfiles } = require('./users/users');
@@ -91,7 +95,7 @@ app.post('/takeRequest', async (request, response) => {
     try {
         const { decoded, error } = await isAuthorized(request);
         if (!error) {
-            const { requestId } = sanitizeInputRequest(request.body);
+            const { requestId } = request.body;
             await takeRequest(decoded.user_id, requestId, expDays);
             response.send({ ok: 'ok' });
         } else {
@@ -108,7 +112,7 @@ app.post('/resignRequest', async (request, response) => {
     try {
         const { decoded, error } = await isAuthorized(request);
         if (!error) {
-            const { requestId } = sanitizeInputRequest(request.body);
+            const { requestId } = request.body;
             await resignRequest(decoded.user_id, requestId);
             response.send({ ok: 'ok' });
         } else {
@@ -123,7 +127,7 @@ app.post('/resignRequest', async (request, response) => {
 
 app.post('/addLove', async (request, response) => {
     try {
-        const { id: requestId, direction } = sanitizeInputRequest(request.body);
+        const { id: requestId, direction } = request.body;
         await addLove(requestId, direction);
         response.send({ ok: 'ok' });
     } catch (error) {
@@ -135,7 +139,7 @@ app.post('/addLove', async (request, response) => {
 
 app.post('/addComment', async (request, response) => {
     try {
-        const { id: requestId, alias, message } = sanitizeInputRequest(request.body);
+        const { id: requestId, alias, message } = request.body;
         if (message.length <= 1000 && alias.length <= 50) {
             await addComment(requestId, alias, message);
             response.send({ ok: 'ok' });
@@ -151,7 +155,7 @@ app.post('/addComment', async (request, response) => {
 
 app.post('/getArtistDataById', async (request, response) => {
     try {
-        const { id } = sanitizeInputRequest(request.body);
+        const { id } = request.body;
         const artist = await getArtistData(id);
         if (artist) {
             response.send({ networks: [], services: [], roles: [], ...artist });
@@ -173,7 +177,7 @@ app.post('/generateResultRequest', async (request, response) => {
             let url;
             let artist;
             let fileBuffer;
-            const { requestId, type, title, intention, hook, ortography, improvement, urlResult, correctedText } = sanitizeInputRequest(request.body);
+            const { requestId, type, title, intention, hook, ortography, improvement, urlResult, correctedText } = request.body;
             switch (type) {
                 case 'CRITICA':
                     artist = await getArtistData(decoded.user_id);
@@ -226,6 +230,17 @@ app.get('/testTemplate/:id', async (request, response) => {
         var bufferStream = new stream.PassThrough();
         bufferStream.end(Buffer.from(fileBuffer));
         bufferStream.pipe(response);
+    } catch (error) {
+        console.log(error);
+        response.send(500, 'Error al realizar la operación');
+    }
+});
+
+app.post('/sendTestEmail/', async (request, response) => {
+    try {
+        const { toMail, toName } = request.body;
+        sendEmail(toMail, toName, 'TEST', {});
+        response.send({ ok: 'ok' });
     } catch (error) {
         console.log(error);
         response.send(500, 'Error al realizar la operación');

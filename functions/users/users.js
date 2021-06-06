@@ -4,9 +4,11 @@ const firestore = admin.firestore();
 exports.createProfile = async (user) => {
     return firestore.collection('perfiles').doc(user.uid).set({
         contactEmail: user.email,
+        followName: 'Any',
+        qFollowName: 'any',
         fName: 'Nuevo',
         lName: 'Usuario',
-        urlImg: '',
+        imgUrl: '',
         likes: 0,
         views: 0,
         roles: [],

@@ -144,15 +144,6 @@ exports.getDateText = (date) => {
   return toSentence(momentObj.format('D [de] MMMM [del] YYYY'));
 }
 
-exports.sanitizeInputRequest = (stringRequest) => {
-  const input = JSON.parse(stringRequest);
-  const result = {};
-  Object.keys(input).forEach(key => {
-    result[key] = typeof input[key] == "string" ? input[key].trim() : input[key];
-  });
-  return result;
-}
-
 exports.isAuthorized = async (request) => {
   const tokenId = request.get('Authorization').split('Bearer ')[1];
   let decoded;
